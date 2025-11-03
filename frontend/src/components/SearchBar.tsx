@@ -118,9 +118,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
           type="submit"
           sx={{
             p: '10px',
-            color: '#8B4513',
+            color: '#ee9ca7',
             '&:hover': {
-              backgroundColor: 'rgba(139, 69, 19, 0.1)',
+              backgroundColor: 'rgba(238, 156, 167, 0.1)',
             },
           }}
         >
@@ -193,7 +193,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                     onClick={() => handleSuggestionClick(suggestion)}
                     sx={{
                       '&:hover': {
-                        backgroundColor: 'rgba(139, 69, 19, 0.1)',
+                        backgroundColor: 'rgba(238, 156, 167, 0.1)',
                       },
                     }}
                   >

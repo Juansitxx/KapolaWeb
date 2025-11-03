@@ -260,9 +260,9 @@ const Register: React.FC = () => {
               mt: 2,
               mb: 2,
               py: 1.5,
-              backgroundColor: '#8B4513',
+              backgroundColor: '#ee9ca7',
               '&:hover': {
-                backgroundColor: '#A0522D',
+                backgroundColor: '#d4a5ad',
               },
               '&:disabled': {
                 backgroundColor: '#e0e0e0',

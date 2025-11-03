@@ -36,7 +36,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           <CircularProgress
             size={size}
             sx={{
-              color: '#8B4513',
+              color: '#ee9ca7',
               mb: 2,
             }}
           />

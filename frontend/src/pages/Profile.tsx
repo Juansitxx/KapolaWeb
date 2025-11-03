@@ -151,7 +151,7 @@ const Profile: React.FC = () => {
         sx={{
           p: 4,
           mb: 4,
-          background: 'linear-gradient(135deg, #8B4513 0%, #A0522D 100%)',
+          background: 'linear-gradient(to right, #ffdde1, #ee9ca7)',
           color: 'white',
         }}
       >
@@ -168,10 +168,18 @@ const Profile: React.FC = () => {
             {user.name.charAt(0).toUpperCase()}
           </Avatar>
           <Box>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="h4" component="h1" sx={{ 
+              fontWeight: 'bold',
+              textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+              color: '#ffffff'
+            }}>
               {user.name}
             </Typography>
-            <Typography variant="h6" sx={{ opacity: 0.9 }}>
+            <Typography variant="h6" sx={{ 
+              opacity: 0.95,
+              textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
+              color: '#ffffff'
+            }}>
               {user.email}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
@@ -264,8 +272,8 @@ const Profile: React.FC = () => {
                     startIcon={<Save />}
                     onClick={handleSave}
                     sx={{
-                      backgroundColor: '#8B4513',
-                      '&:hover': { backgroundColor: '#A0522D' },
+                      backgroundColor: '#ee9ca7',
+                      '&:hover': { backgroundColor: '#d4a5ad' },
                     }}
                   >
                     Guardar
@@ -326,8 +334,8 @@ const Profile: React.FC = () => {
                     onClick={() => navigate('/admin')}
                     fullWidth
                     sx={{
-                      backgroundColor: '#8B4513',
-                      '&:hover': { backgroundColor: '#A0522D' },
+                      backgroundColor: '#ee9ca7',
+                      '&:hover': { backgroundColor: '#d4a5ad' },
                     }}
                   >
                     Panel Admin

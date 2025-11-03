@@ -43,10 +43,10 @@ const Footer: React.FC = () => {
                 sx={{
                   fontWeight: 'bold',
                   mb: 2,
-                  color: '#8B4513',
+                  color: '#ee9ca7',
                 }}
               >
-                🍪 Kapola Ibagué.
+                KAPOLA IBAGUE 
               </Typography>
               <Typography variant="body2" sx={{ mb: 2, opacity: 0.9 }}>
                 Las mejores galletas estilo New York, horneadas con amor y los ingredientes más frescos.
@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
                    href="https://www.facebook.com/kapolaaa"
                    target="_blank"
                    rel="noopener noreferrer"
-                  sx={{ color: 'white', '&:hover': { color: '#8B4513' } }}
+                  sx={{ color: 'white', '&:hover': { color: '#ee9ca7' } }}
                 >
                   <Facebook />
                 </IconButton>
@@ -66,7 +66,7 @@ const Footer: React.FC = () => {
                   href="https://x.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  sx={{ color: 'white', '&:hover': { color: '#8B4513' } }}
+                  sx={{ color: 'white', '&:hover': { color: '#ee9ca7' } }}
                 >
                   <Twitter />
                 </IconButton>
@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
                   href="https://www.instagram.com/kapola_ibague"
                   target="_blank"
                   rel="noopener noreferrer"
-                  sx={{ color: 'white', '&:hover': { color: '#8B4513' } }}
+                  sx={{ color: 'white', '&:hover': { color: '#ee9ca7' } }}
                 >
                   <Instagram />
                 </IconButton>
@@ -89,16 +89,16 @@ const Footer: React.FC = () => {
               Enlaces
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Link href="/" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Inicio
               </Link>
-              <Link href="/products" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/products" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Productos
               </Link>
-              <Link href="/about" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/about" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Nosotros
               </Link>
-              <Link href="/contact" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/contact" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Contacto
               </Link>
             </Box>
@@ -110,16 +110,16 @@ const Footer: React.FC = () => {
               Soporte
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Link href="/help" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/help" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Ayuda
               </Link>
-              <Link href="/shipping" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/shipping" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Envíos
               </Link>
-              <Link href="/returns" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/returns" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Devoluciones
               </Link>
-              <Link href="/faq" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#8B4513' } }}>
+              <Link href="/faq" color="inherit" sx={{ textDecoration: 'none', '&:hover': { color: '#ee9ca7' } }}>
                 Preguntas Frecuentes
               </Link>
             </Box>
@@ -132,19 +132,19 @@ const Footer: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LocationOn sx={{ color: '#8B4513', fontSize: 20 }} />
+                <LocationOn sx={{ color: '#ee9ca7', fontSize: 20 }} />
                 <Typography variant="body2">
                   Ciudadela Comfenalco, Ibagué.
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Phone sx={{ color: '#8B4513', fontSize: 20 }} />
+                <Phone sx={{ color: '#ee9ca7', fontSize: 20 }} />
                 <Typography variant="body2">
                   +57 (323) 944-5435
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Email sx={{ color: '#8B4513', fontSize: 20 }} />
+                <Email sx={{ color: '#ee9ca7', fontSize: 20 }} />
                 <Typography variant="body2">
                   Kapola@gmail.com
                 </Typography>

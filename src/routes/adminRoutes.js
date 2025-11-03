@@ -6,6 +6,10 @@ import {
   getAllOrders,
   updateOrderStatusAdmin,
   deleteUser,
+  getAllProductsAdmin,
+  createProductAdmin,
+  updateProductAdmin,
+  deleteProductAdmin,
   adminMiddleware
 } from "../controllers/adminController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
@@ -27,6 +31,12 @@ router.delete("/users/:id", deleteUser);
 // Gestión de órdenes
 router.get("/orders", getAllOrders);
 router.put("/orders/:id/status", updateOrderStatusAdmin);
+
+// Gestión de productos (solo admin)
+router.get("/products", getAllProductsAdmin);
+router.post("/products", createProductAdmin);
+router.put("/products/:id", updateProductAdmin);
+router.delete("/products/:id", deleteProductAdmin);
 
 export default router;
 

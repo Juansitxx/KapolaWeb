@@ -12,19 +12,20 @@ import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
+import Admin from './pages/Admin';
 
 // Crear tema personalizado
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#8B4513', // Marrón chocolate
-      light: '#A0522D',
-      dark: '#654321',
+      main: '#ee9ca7', // Rosa suave principal
+      light: '#ffdde1',
+      dark: '#d4a5ad',
     },
     secondary: {
-      main: '#D2691E', // Marrón claro
-      light: '#F4A460',
-      dark: '#CD853F',
+      main: '#ffdde1', // Rosa muy suave
+      light: '#fff0f2',
+      dark: '#e6c7cb',
     },
     background: {
       default: '#fafafa',
@@ -98,6 +99,7 @@ function App() {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/orders" element={<Orders />} />
+                  <Route path="/admin" element={<Admin />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Box>

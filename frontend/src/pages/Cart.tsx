@@ -70,9 +70,9 @@ const Cart: React.FC = () => {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-CO', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'COP',
     }).format(price);
   };
 
@@ -114,8 +114,8 @@ const Cart: React.FC = () => {
             startIcon={<ShoppingBag />}
             onClick={() => navigate('/')}
             sx={{
-              backgroundColor: '#8B4513',
-              '&:hover': { backgroundColor: '#A0522D' },
+              backgroundColor: '#ee9ca7',
+              '&:hover': { backgroundColor: '#d4a5ad' },
             }}
           >
             Explorar Productos
@@ -279,7 +279,7 @@ const Cart: React.FC = () => {
               <Alert severity="info" sx={{ mb: 3 }}>
                 <Typography variant="body2">
                   <LocalShipping sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                  Envío gratis en pedidos mayores a €50
+                  Envío gratis en pedidos mayores a $50.000 COP
                 </Typography>
               </Alert>
 
@@ -327,8 +327,8 @@ const Cart: React.FC = () => {
             onClick={handleConfirmCheckout}
             variant="contained"
             sx={{
-              backgroundColor: '#8B4513',
-              '&:hover': { backgroundColor: '#A0522D' },
+              backgroundColor: '#ee9ca7',
+              '&:hover': { backgroundColor: '#d4a5ad' },
             }}
           >
             Confirmar Pedido

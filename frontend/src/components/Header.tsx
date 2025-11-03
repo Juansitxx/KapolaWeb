@@ -73,8 +73,16 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <AppBar position="sticky" sx={{ backgroundColor: '#8B4513' }}>
-        <Toolbar>
+      <AppBar 
+        position="sticky" 
+        sx={{ 
+          background: 'linear-gradient(to right, #ffdde1, #ee9ca7)',
+          borderRadius: 0,
+          boxShadow: 'none',
+          borderBottom: '1px solid rgba(238, 156, 167, 0.2)'
+        }}
+      >
+        <Toolbar sx={{ borderRadius: 0 }}>
           {/* Logo y título */}
           <Typography
             variant="h6"
@@ -84,10 +92,12 @@ const Header: React.FC = () => {
               mr: 4,
               fontWeight: 'bold',
               cursor: 'pointer',
+              textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
+              color: '#ffffff'
             }}
             onClick={() => navigate('/')}
           >
-            🍪 Kapola.
+             Kapola
           </Typography>
 
           {/* Búsqueda */}
@@ -95,58 +105,83 @@ const Header: React.FC = () => {
             <SearchBar onSearch={handleSearch} fullWidth />
           </Box>
 
-          {/* Navegación desktop */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-            {menuItems.map((item) => (
-              <Button
-                key={item.path}
-                color="inherit"
-                startIcon={item.icon}
-                onClick={() => navigate(item.path)}
-                sx={{ textTransform: 'none' }}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </Box>
+          {/* Espaciador para empujar elementos a la derecha */}
+          <Box sx={{ flexGrow: 1 }} />
 
-          {/* Carrito */}
-          <IconButton
-            color="inherit"
-            onClick={() => navigate('/cart')}
-            sx={{ ml: 2 }}
-          >
-            <Badge badgeContent={getItemCount()} color="error">
-              <ShoppingCart />
-            </Badge>
-          </IconButton>
-
-          {/* Menú de usuario */}
-          {isAuthenticated ? (
+          {/* Elementos del lado derecho */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Navegación desktop */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
+              {menuItems.map((item) => (
+                <Button
+                  key={item.path}
+                  color="inherit"
+                  startIcon={item.icon}
+                  onClick={() => navigate(item.path)}
+                  sx={{ 
+                    textTransform: 'none',
+                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
+                    color: '#ffffff',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.5)'
+                    }
+                  }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+            {/* Carrito */}
             <IconButton
-              size="large"
-              edge="end"
-              aria-label="cuenta de usuario"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleProfileMenuOpen}
               color="inherit"
-              sx={{ ml: 1 }}
+              onClick={() => navigate('/cart')}
+              sx={{
+                color: '#ffffff',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
             >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                {user?.name?.charAt(0).toUpperCase()}
-              </Avatar>
+              <Badge badgeContent={getItemCount()} color="error">
+                <ShoppingCart sx={{ color: '#ffffff' }} />
+              </Badge>
             </IconButton>
-          ) : (
-            <Button
-              color="inherit"
-              startIcon={<Login />}
-              onClick={() => navigate('/login')}
-              sx={{ ml: 1, textTransform: 'none' }}
-            >
-              Iniciar Sesión
-            </Button>
-          )}
+
+            {/* Menú de usuario */}
+            {isAuthenticated ? (
+              <IconButton
+                size="large"
+                edge="end"
+                aria-label="cuenta de usuario"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleProfileMenuOpen}
+                color="inherit"
+              >
+                <Avatar sx={{ width: 32, height: 32, bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
+                  {user?.name?.charAt(0).toUpperCase()}
+                </Avatar>
+              </IconButton>
+            ) : (
+              <Button
+                color="inherit"
+                startIcon={<Login />}
+                onClick={() => navigate('/login')}
+                sx={{ 
+                  textTransform: 'none',
+                  textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
+                  color: '#ffffff',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.5)'
+                  }
+                }}
+              >
+                Iniciar Sesión
+              </Button>
+            )}
+          </Box>
 
           {/* Menú móvil */}
           <IconButton
@@ -155,9 +190,16 @@ const Header: React.FC = () => {
             color="inherit"
             aria-label="menú"
             onClick={() => setMobileMenuOpen(true)}
-            sx={{ display: { xs: 'block', md: 'none' }, ml: 1 }}
+            sx={{ 
+              display: { xs: 'block', md: 'none' }, 
+              ml: 1,
+              color: '#ffffff',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
           >
-            <MenuIcon />
+            <MenuIcon sx={{ color: '#ffffff' }} />
           </IconButton>
         </Toolbar>
       </AppBar>

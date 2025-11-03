@@ -136,7 +136,7 @@ const Home: React.FC = () => {
       {/* Hero Section */}
       <Paper
         sx={{
-          background: 'linear-gradient(135deg, #8B4513 0%, #A0522D 100%)',
+          background: 'linear-gradient(to right, #ffdde1, #ee9ca7)',
           color: 'white',
           p: 6,
           mb: 4,
@@ -144,10 +144,19 @@ const Home: React.FC = () => {
           textAlign: 'center',
         }}
       >
-        <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
-          🍪 Bienvenido a Kapola Ibagué.
+        <Typography variant="h2" component="h1" gutterBottom sx={{ 
+          fontWeight: 'bold',
+          textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+          color: '#ffffff'
+        }}>
+             Bienvenido a Kapola Ibagué.
         </Typography>
-        <Typography variant="h5" sx={{ mb: 4, opacity: 0.9 }}>
+        <Typography variant="h5" sx={{ 
+          mb: 4, 
+          opacity: 0.95,
+          textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
+          color: '#ffffff'
+        }}>
           ¡Descubre las mejores galletas  New York de la ciudad!.
         </Typography>
 
@@ -174,7 +183,7 @@ const Home: React.FC = () => {
               size="large"
               sx={{
                 backgroundColor: 'white',
-                color: '#8B4513',
+                color: '#ee9ca7',
                 '&:hover': {
                   backgroundColor: '#f5f5f5',
                 },
@@ -229,16 +238,16 @@ const Home: React.FC = () => {
 
       {/* Productos populares */}
       {!searchQuery && !selectedCategory && popularProducts.length > 0 && (
-        <Box sx={{ mb: 6 }}>
+        <Box sx={{ mb: 6, position: 'relative', zIndex: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <TrendingUp sx={{ mr: 1, color: 'primary.main' }} />
             <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
               Productos Populares
             </Typography>
           </Box>
-          <Grid container spacing={3}>
+          <Grid container spacing={4}>
             {popularProducts.map((product) => (
-              <Grid key={product.id} xs={12} sm={6} md={4} lg={2}>
+              <Grid key={product.id} item xs={12} sm={6} md={4} lg={2}>
                 <ProductCard product={product} />
               </Grid>
             ))}
@@ -247,7 +256,7 @@ const Home: React.FC = () => {
       )}
 
       {/* Productos principales */}
-      <Box>
+      <Box sx={{ position: 'relative', zIndex: 0 }}>
         <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 'bold' }}>
           {searchQuery ? `Resultados para "${searchQuery}"` : 
            selectedCategory ? `Categoría: ${selectedCategory}` : 
@@ -264,9 +273,9 @@ const Home: React.FC = () => {
             </Button>
           </Paper>
         ) : (
-          <Grid container spacing={3}>
+          <Grid container spacing={4}>
             {products.map((product) => (
-              <Grid key={product.id} xs={12} sm={6} md={4} lg={3}>
+              <Grid key={product.id} item xs={12} sm={6} md={4} lg={3}>
                 <ProductCard product={product} />
               </Grid>
             ))}
@@ -296,9 +305,9 @@ const Home: React.FC = () => {
             size="large"
             href="/register"
             sx={{
-              backgroundColor: '#8B4513',
+              backgroundColor: '#ee9ca7',
               '&:hover': {
-                backgroundColor: '#A0522D',
+                backgroundColor: '#d4a5ad',
               },
             }}
           >

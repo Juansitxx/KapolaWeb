@@ -133,9 +133,9 @@ const Orders: React.FC = () => {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-CO', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'COP',
     }).format(price);
   };
 
@@ -203,8 +203,8 @@ const Orders: React.FC = () => {
             size="large"
             onClick={() => navigate('/')}
             sx={{
-              backgroundColor: '#8B4513',
-              '&:hover': { backgroundColor: '#A0522D' },
+              backgroundColor: '#ee9ca7',
+              '&:hover': { backgroundColor: '#d4a5ad' },
             }}
           >
             Explorar Productos

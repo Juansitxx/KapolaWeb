@@ -77,7 +77,7 @@ const Login: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          borderRadius: 2,
+          borderRadius: 0,
         }}
       >
         <Box
@@ -166,9 +166,9 @@ const Login: React.FC = () => {
               mt: 2,
               mb: 2,
               py: 1.5,
-              backgroundColor: '#8B4513',
+              backgroundColor: '#ee9ca7',
               '&:hover': {
-                backgroundColor: '#A0522D',
+                backgroundColor: '#d4a5ad',
               },
               '&:disabled': {
                 backgroundColor: '#e0e0e0',
@@ -204,7 +204,7 @@ const Login: React.FC = () => {
         </Box>
 
         {/* Credenciales de prueba */}
-        <Box
+       {/* <Box
           sx={{
             mt: 4,
             p: 2,
@@ -222,7 +222,7 @@ const Login: React.FC = () => {
           <Typography variant="body2" color="text.secondary">
             <strong>Cliente:</strong> juan@ejemplo.com / cliente123
           </Typography>
-        </Box>
+        </Box> */}
       </Paper>
     </Container>
   );

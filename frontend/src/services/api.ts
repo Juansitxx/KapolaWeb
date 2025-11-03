@@ -224,6 +224,61 @@ export const adminService = {
   updateOrderStatusAdmin: async (orderId: number, status: string, notes?: string): Promise<any> => {
     const response = await api.put(`/admin/orders/${orderId}/status`, { status, notes });
     return response.data;
+  },
+
+  // ============ GESTIÓN DE PRODUCTOS (ADMIN) ============
+  
+  // Obtener todos los productos (admin)
+  getProducts: async (params?: { page?: number; limit?: number; category?: string; active?: boolean; search?: string }): Promise<any> => {
+    const response = await api.get('/admin/products', { params });
+    return response.data;
+  },
+
+  // Crear producto (admin)
+  createProduct: async (productData: {
+    name: string;
+    description?: string;
+    price: number;
+    stock?: number;
+    imageUrl?: string;
+    category?: string;
+    active?: boolean;
+  }): Promise<any> => {
+    const response = await api.post('/admin/products', productData);
+    return response.data;
+  },
+
+  // Actualizar producto (admin)
+  updateProduct: async (productId: number, productData: {
+    name?: string;
+    description?: string;
+    price?: number;
+    stock?: number;
+    imageUrl?: string;
+    category?: string;
+    active?: boolean;
+  }): Promise<any> => {
+    const response = await api.put(`/admin/products/${productId}`, productData);
+    return response.data;
+  },
+
+  // Eliminar producto (admin)
+  deleteProduct: async (productId: number): Promise<any> => {
+    const response = await api.delete(`/admin/products/${productId}`);
+    return response.data;
+  },
+
+  // Subir imagen de producto (admin)
+  uploadProductImage: async (productId: number, file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await api.post(`/upload/products/${productId}/image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   }
 };
 

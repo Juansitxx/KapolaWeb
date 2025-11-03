@@ -5,77 +5,20 @@ const prisma = new PrismaClient();
 
 const categories = [
   "Chocolate",
-  "Vainilla",
-  "Avena",
-  "Mantequilla",
-  "Frutas",
+  "Red Velvet",
+  "Maracuyá",
+  "Oreo",
   "Especiales"
 ];
 
 const sampleProducts = [
   {
-    name: "Galletas de Chocolate Clásicas",
+    name: "Galleta de chips de chocolate",
     description: "Deliciosas galletas de chocolate con chips de chocolate negro",
-    price: 12.99,
+    price: 5500,
     stock: 50,
     category: "Chocolate",
-    imageUrl: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400"
-  },
-  {
-    name: "Galletas de Vainilla con Glaseado",
-    description: "Suaves galletas de vainilla con glaseado de azúcar",
-    price: 10.99,
-    stock: 30,
-    category: "Vainilla",
-    imageUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400"
-  },
-  {
-    name: "Galletas de Avena y Pasas",
-    description: "Saludables galletas de avena con pasas y canela",
-    price: 11.50,
-    stock: 25,
-    category: "Avena",
-    imageUrl: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400"
-  },
-  {
-    name: "Galletas de Mantequilla Artesanales",
-    description: "Crujientes galletas de mantequilla hechas a mano",
-    price: 9.99,
-    stock: 40,
-    category: "Mantequilla",
-    imageUrl: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400"
-  },
-  {
-    name: "Galletas de Frutas Mixtas",
-    description: "Coloridas galletas con trozos de frutas secas",
-    price: 13.99,
-    stock: 20,
-    category: "Frutas",
-    imageUrl: "https://images.unsplash.com/photo-1603133872878-784f0b9d0e5b?w=400"
-  },
-  {
-    name: "Galletas Especiales de Temporada",
-    description: "Galletas decoradas para ocasiones especiales",
-    price: 15.99,
-    stock: 15,
-    category: "Especiales",
-    imageUrl: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400"
-  },
-  {
-    name: "Galletas de Chocolate Blanco",
-    description: "Ricas galletas con chips de chocolate blanco",
-    price: 12.50,
-    stock: 35,
-    category: "Chocolate",
-    imageUrl: "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400"
-  },
-  {
-    name: "Galletas de Limón",
-    description: "Refrescantes galletas con sabor a limón natural",
-    price: 10.50,
-    stock: 28,
-    category: "Vainilla",
-    imageUrl: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400"
+    imageUrl: "https://imgur.com/a/s7gsdUw"
   }
 ];
 

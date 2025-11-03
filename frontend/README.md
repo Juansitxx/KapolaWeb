@@ -55,7 +55,7 @@ npm test           # Ejecutar tests
 npm run eject      # Eyectar configuración (no recomendado)
 ```
 
-## 📁 Estructura del Proyecto
+##  Estructura del Proyecto
 
 ```
 src/
@@ -129,6 +129,6 @@ Para contribuir al proyecto:
 4. Push a la rama
 5. Abre un Pull Request
 
-## 📄 Licencia
+##  Licencia
 
 Este proyecto está bajo la Licencia MIT.

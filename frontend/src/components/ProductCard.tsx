@@ -61,9 +61,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-CO', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'COP',
     }).format(price);
   };
 
@@ -79,9 +79,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
         transition: 'all 0.3s ease-in-out',
         borderRadius: 3,
         overflow: 'hidden',
+        margin: '8px',
+        position: 'relative',
+        zIndex: 1,
         '&:hover': {
-          transform: 'translateY(-8px)',
-          boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
+          transform: 'translateY(-4px)',
+          boxShadow: '0 8px 16px rgba(0,0,0,0.12)',
+          zIndex: 2,
         },
       }}
     >
@@ -197,11 +201,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </Typography>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, gap: 1 }}>
           <Typography
             variant="h6"
             color="primary"
-            sx={{ fontWeight: 'bold' }}
+            sx={{ fontWeight: 'bold', flex: 1 }}
           >
             {formatPrice(product.price)}
           </Typography>
@@ -211,6 +215,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               size="small"
               variant="outlined"
               color="primary"
+              sx={{ ml: 'auto' }}
             />
           )}
         </Box>
@@ -232,9 +237,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
           onClick={handleAddToCart}
           disabled={isOutOfStock || loading || !isAuthenticated}
           sx={{
-            backgroundColor: '#8B4513',
+            backgroundColor: '#ee9ca7',
             '&:hover': {
-              backgroundColor: '#A0522D',
+              backgroundColor: '#d4a5ad',
             },
             '&:disabled': {
               backgroundColor: '#e0e0e0',
