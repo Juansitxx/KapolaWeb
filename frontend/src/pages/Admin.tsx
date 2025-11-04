@@ -60,6 +60,9 @@ const Admin: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Backend base (sin /api) para construir URLs de imagen cuando vienen relativas
+  const API_BASE_NO_API = (process.env.REACT_APP_API_URL || 'http://localhost:4000').replace(/\/api\/?$/, '');
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -134,7 +137,10 @@ const Admin: React.FC = () => {
         category: product.category || '',
         active: product.active,
       });
-      setImagePreview(product.imageUrl || null);
+  // Si la imagen viene como ruta relativa (empieza con /uploads) o no contiene http, prefix con backend
+  const rawUrl = product.imageUrl || '';
+  const normalized = rawUrl && !rawUrl.startsWith('http') ? `${API_BASE_NO_API}${rawUrl}` : rawUrl || null;
+  setImagePreview(normalized);
     } else {
       setEditingProduct(null);
       setFormData({
@@ -227,14 +233,28 @@ const Admin: React.FC = () => {
       // Si hay un archivo seleccionado, subirlo
       if (selectedFile) {
         try {
-          await adminService.uploadProductImage(productId, selectedFile);
+          const uploadResponse = await adminService.uploadProductImage(productId, selectedFile);
+          console.log('✅ Imagen subida exitosamente:', uploadResponse);
+          
+          // Forzar recarga inmediata del producto actualizado
+          if (uploadResponse.product && uploadResponse.product.imageUrl) {
+            // Actualizar el producto en el estado local inmediatamente
+            setProducts(prevProducts => 
+              prevProducts.map(p => 
+                p.id === productId 
+                  ? { ...p, imageUrl: uploadResponse.product.imageUrl }
+                  : p
+              )
+            );
+          }
+          
           setSuccess(
             editingProduct
               ? 'Producto e imagen actualizados exitosamente'
               : 'Producto e imagen creados exitosamente'
           );
         } catch (uploadErr: any) {
-          console.error('Error al subir imagen:', uploadErr);
+          console.error('❌ Error al subir imagen:', uploadErr);
           setError(
             uploadErr.response?.data?.message ||
               'Producto guardado pero hubo un error al subir la imagen'
@@ -243,7 +263,10 @@ const Admin: React.FC = () => {
       }
 
       handleCloseDialog();
-      loadProducts();
+      // Recargar productos después de un pequeño delay
+      setTimeout(() => {
+        loadProducts();
+      }, 800);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al guardar producto');
       console.error('Error:', err);
@@ -412,28 +435,53 @@ const Admin: React.FC = () => {
               products.map((product) => (
                 <TableRow key={product.id} hover>
                   <TableCell>
-                    {product.imageUrl ? (
-                      <CardMedia
-                        component="img"
-                        sx={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 1 }}
-                        image={product.imageUrl}
-                        alt={product.name}
-                      />
-                    ) : (
+                    <Box sx={{ position: 'relative', width: 60, height: 60 }}>
+                      {product.imageUrl ? (
+                        <CardMedia
+                          component="img"
+                          sx={{ 
+                            width: 60, 
+                            height: 60, 
+                            objectFit: 'cover', 
+                            borderRadius: 1,
+                            backgroundColor: '#f5f5f5',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            zIndex: 1
+                          }}
+                          // Normalizar URL si es relativa
+                          image={product.imageUrl.startsWith('http') ? product.imageUrl : `${API_BASE_NO_API}${product.imageUrl}`}
+                          alt={product.name}
+                          onError={(e: any) => {
+                            console.error('❌ Error al cargar imagen:', product.imageUrl);
+                            e.target.style.display = 'none';
+                            const placeholder = e.target.parentElement?.querySelector('.image-placeholder');
+                            if (placeholder) {
+                              (placeholder as HTMLElement).style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
                       <Box
+                        className="image-placeholder"
                         sx={{
                           width: 60,
                           height: 60,
                           bgcolor: 'grey.200',
-                          display: 'flex',
+                          display: product.imageUrl ? 'none' : 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           borderRadius: 1,
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          zIndex: 0
                         }}
                       >
                         <ShoppingBag color="disabled" />
                       </Box>
-                    )}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>

@@ -1,5 +1,7 @@
 import { upload, handleUploadError, getFileUrl, deleteFile } from "../services/fileUploadService.js";
 import { prisma } from "../config/prisma.js";
+import path from "path";
+import fs from "fs";
 
 // Subir imagen de producto
 export const uploadProductImage = async (req, res) => {
@@ -24,11 +26,23 @@ export const uploadProductImage = async (req, res) => {
     // Eliminar imagen anterior si existe
     if (product.imageUrl) {
       const oldImagePath = product.imageUrl.split('/').pop();
-      deleteFile(`uploads/products/${oldImagePath}`);
+      const filePath = path.join(process.cwd(), 'uploads', 'products', oldImagePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
 
     // Actualizar producto con nueva imagen
     const imageUrl = getFileUrl(req, req.file.filename);
+    
+    // Verificar que el archivo existe antes de actualizar
+    if (!fs.existsSync(req.file.path)) {
+      console.error('❌ ERROR: Archivo no encontrado en:', req.file.path);
+      return res.status(500).json({ message: "Error: El archivo no se guardó correctamente" });
+    }
+    
+    console.log('✅ Archivo guardado en:', req.file.path);
+    console.log('🔗 URL generada:', imageUrl);
     
     const updatedProduct = await prisma.product.update({
       where: { id: parseInt(productId) },
@@ -40,10 +54,12 @@ export const uploadProductImage = async (req, res) => {
       }
     });
 
+    console.log('✅ Producto actualizado:', updatedProduct);
+
     res.json({
       message: "Imagen subida exitosamente",
       product: updatedProduct,
-      imageUrl
+      imageUrl: updatedProduct.imageUrl
     });
   } catch (error) {
     console.error(error);
@@ -76,7 +92,10 @@ export const deleteProductImage = async (req, res) => {
 
     // Eliminar archivo del sistema
     const filename = product.imageUrl.split('/').pop();
-    const deleted = deleteFile(`uploads/products/${filename}`);
+    const filePath = path.join(process.cwd(), 'uploads', 'products', filename);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
 
     // Actualizar producto
     const updatedProduct = await prisma.product.update({

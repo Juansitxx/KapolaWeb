@@ -34,7 +34,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Servir archivos estáticos (imágenes)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const uploadsStaticPath = path.resolve(__dirname, '../uploads');
+console.log('📁 Serviendo archivos estáticos desde:', uploadsStaticPath);
+app.use('/uploads', express.static(uploadsStaticPath));
 
 // Middleware de logging
 app.use((req, res, next) => {

@@ -40,6 +40,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Manejar errores de conexión
+    if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || error.message?.includes('ERR_CONNECTION_REFUSED')) {
+      console.error('Error de conexión con el servidor. Verifica que el backend esté corriendo en http://localhost:4000');
+      // No redirigir en caso de error de conexión, solo mostrar error
+      return Promise.reject({
+        ...error,
+        message: 'No se pudo conectar con el servidor. Por favor, verifica que el backend esté corriendo.',
+        isConnectionError: true
+      });
+    }
+    
     if (error.response?.status === 401) {
       // Token expirado o inválido
       localStorage.removeItem('auth_token');

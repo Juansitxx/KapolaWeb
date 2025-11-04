@@ -1,18 +1,26 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ruta absoluta para uploads 
+// __dirname aquí es: src/services/
+// Queremos: raiz/uploads/products
+// Desde src/services/ necesitamos subir 2 niveles: ../../uploads/products
+const uploadsDir = path.resolve(__dirname, '../../uploads/products');
 
 // Configuración de multer para subida de archivos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = 'uploads/products';
-    
     // Crear directorio si no existe
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
     }
     
-    cb(null, uploadPath);
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     // Generar nombre único para el archivo

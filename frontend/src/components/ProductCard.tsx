@@ -99,6 +99,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
             objectFit: 'cover',
             backgroundColor: '#f5f5f5',
           }}
+          onError={(e: any) => {
+            // Si falla la imagen, usar placeholder
+            if (product.imageUrl) {
+              console.error('Error al cargar imagen del producto:', product.imageUrl);
+              e.target.src = '/placeholder-cookie.jpg';
+            }
+          }}
         />
         <Box
           sx={{
@@ -201,24 +208,25 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </Typography>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, gap: 1 }}>
-          <Typography
-            variant="h6"
-            color="primary"
-            sx={{ fontWeight: 'bold', flex: 1 }}
-          >
-            {formatPrice(product.price)}
-          </Typography>
-          {product.category && (
-            <Chip
-              label={product.category}
-              size="small"
-              variant="outlined"
-              color="primary"
-              sx={{ ml: 'auto' }}
-            />
-          )}
-        </Box>
+        <Box sx={{ mb: 1 }}>
+  <Typography
+    variant="h6"
+    color="primary"
+    sx={{ fontWeight: 'bold' }}
+  >
+    {formatPrice(product.price)}
+  </Typography>
+  {product.category && (
+    <Chip
+      label={product.category}
+      size="small"
+      variant="outlined"
+      color="primary"
+      sx={{ mt: 0.5 }}
+    />
+  )}
+</Box>
+
 
         <Typography
           variant="body2"
