@@ -1,0 +1,2 @@
+-- Migration removed: stock reservation migration was reverted. This file kept to preserve migration history but the schema changes should be rolled back manually if applied.
+-- If you applied this migration to the database, please run `npx prisma migrate resolve` or `npx prisma migrate reset` as appropriate.

@@ -1,5 +1,4 @@
 # 🍪 Galletas App - E-commerce Completo
-
 Aplicación completa de e-commerce para venta de galletas artesanales, desarrollada con **Node.js**, **React** y **PostgreSQL**.
 
 ## 🚀 Características Principales

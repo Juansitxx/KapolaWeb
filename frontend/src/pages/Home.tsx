@@ -21,8 +21,6 @@ import {
   Search,
   FilterList,
   ShoppingCart,
-  Star,
-  TrendingUp,
 } from '@mui/icons-material';
 import { Product, SearchFilters } from '../types';
 import { productService } from '../services/api';
@@ -33,7 +31,6 @@ import ProductCard from '../components/ProductCard';
 const Home: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [popularProducts, setPopularProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,15 +47,13 @@ const Home: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      const [productsResponse, categoriesResponse, popularResponse] = await Promise.all([
+      const [productsResponse, categoriesResponse] = await Promise.all([
         productService.getProducts({ limit: 8 }),
         productService.getCategories(),
-        productService.getPopularProducts(6),
       ]);
 
       setProducts(productsResponse.products);
       setCategories(categoriesResponse.categories);
-      setPopularProducts(popularResponse.products);
     } catch (err) {
       setError('Error al cargar los productos');
       console.error('Error:', err);
@@ -234,25 +229,6 @@ const Home: React.FC = () => {
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
-      )}
-
-      {/* Productos populares */}
-      {!searchQuery && !selectedCategory && popularProducts.length > 0 && (
-        <Box sx={{ mb: 6, position: 'relative', zIndex: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <TrendingUp sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h5" component="h2" sx={{ fontWeight: 'bold' }}>
-              Productos Populares
-            </Typography>
-          </Box>
-          <Grid container spacing={4}>
-            {popularProducts.map((product) => (
-              <Grid key={product.id} item xs={12} sm={6} md={4} lg={2}>
-                <ProductCard product={product} />
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
       )}
 
       {/* Productos principales */}
