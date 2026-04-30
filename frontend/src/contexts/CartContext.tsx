@@ -24,15 +24,15 @@ interface CartProviderProps {
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.role === 'cliente') {
       refreshCart();
     } else {
       setCart(null);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.role]);
 
   const refreshCart = async () => {
     try {

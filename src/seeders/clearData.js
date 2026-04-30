@@ -1,7 +1,14 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import readline from "readline";
 
 const prisma = new PrismaClient();
+
+if (process.env.NODE_ENV === "production") {
+  console.error("Limpieza destructiva bloqueada: NODE_ENV=production");
+  await prisma.$disconnect();
+  process.exit(1);
+}
 
 // Crea una interfaz para leer desde la consola
 const rl = readline.createInterface({

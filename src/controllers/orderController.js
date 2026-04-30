@@ -196,13 +196,11 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// Actualizar estado de la orden (solo para admin o el mismo usuario)
+// Actualizar estado de la orden (admin)
 export const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const userId = req.user.id;
-    const userRole = req.user.role;
 
     const validStatuses = ['pendiente', 'confirmada', 'en_proceso', 'enviada', 'entregada', 'cancelada'];
     
@@ -212,12 +210,8 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Verificar que la orden existe y pertenece al usuario (o es admin)
-    const order = await prisma.order.findFirst({
-      where: { 
-        id: parseInt(id),
-        ...(userRole !== 'admin' ? { userId } : {})
-      }
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(id) }
     });
 
     if (!order) {
@@ -325,12 +319,6 @@ export const cancelOrder = async (req, res) => {
 // Obtener estadísticas de órdenes (solo para admin)
 export const getOrderStats = async (req, res) => {
   try {
-    const userRole = req.user.role;
-    
-    if (userRole !== 'admin') {
-      return res.status(403).json({ message: "Acceso denegado" });
-    }
-
     const [
       totalOrders,
       pendingOrders,

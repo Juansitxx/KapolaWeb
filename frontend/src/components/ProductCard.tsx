@@ -33,8 +33,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   showAddToCart = true,
 }) => {
   const { addToCart, loading } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [isFavorite, setIsFavorite] = React.useState(false);
+  const canUseCart = isAuthenticated && user?.role === 'cliente';
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
@@ -243,7 +244,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           variant="contained"
           startIcon={<AddShoppingCart />}
           onClick={handleAddToCart}
-          disabled={isOutOfStock || loading || !isAuthenticated}
+          disabled={isOutOfStock || loading || !canUseCart}
           sx={{
             backgroundColor: '#ee9ca7',
             '&:hover': {
@@ -259,6 +260,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
             ? 'Agotado'
             : !isAuthenticated
             ? 'Inicia sesión'
+            : !canUseCart
+            ? 'Solo clientes'
             : loading
             ? 'Agregando...'
             : 'Agregar al carrito'}

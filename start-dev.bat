@@ -4,7 +4,7 @@ echo ==================================
 
 echo.
 echo Iniciando Backend (Puerto 4000)...
-start "Backend" cmd /k "cd /d %~dp0 && npm run dev"
+start "Backend" cmd /k "cd /d %~dp0 && npm start"
 
 echo.
 echo Esperando 3 segundos para que el backend se inicie...

@@ -39,7 +39,7 @@ import { Order } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 const Orders: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +52,12 @@ const Orders: React.FC = () => {
       navigate('/login');
       return;
     }
+    if (user?.role === 'admin') {
+      navigate('/admin');
+      return;
+    }
     loadOrders();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user?.role, navigate]);
 
   const loadOrders = async () => {
     try {
@@ -153,7 +157,7 @@ const Orders: React.FC = () => {
     return ['pendiente', 'confirmada'].includes(status);
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || user?.role === 'admin') {
     return null; // Se redirige automáticamente
   }
 

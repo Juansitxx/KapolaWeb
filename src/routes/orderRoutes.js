@@ -8,6 +8,7 @@ import {
   getOrderStats 
 } from "../controllers/orderController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { adminMiddleware, clienteMiddleware } from "../middleware/roleMiddleware.js";
 import { validateOrder, validateOrderStatus } from "../middleware/validationMiddleware.js";
 
 const router = express.Router();
@@ -16,11 +17,11 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // Rutas de órdenes
-router.get("/", getUserOrders);
-router.get("/stats", getOrderStats);
-router.get("/:id", getOrderById);
-router.post("/", validateOrder, createOrder);
-router.put("/:id/status", validateOrderStatus, updateOrderStatus);
-router.put("/:id/cancel", cancelOrder);
+router.get("/", clienteMiddleware, getUserOrders);
+router.get("/stats", adminMiddleware, getOrderStats);
+router.get("/:id", clienteMiddleware, getOrderById);
+router.post("/", clienteMiddleware, validateOrder, createOrder);
+router.put("/:id/status", adminMiddleware, validateOrderStatus, updateOrderStatus);
+router.put("/:id/cancel", clienteMiddleware, cancelOrder);
 
 export default router;

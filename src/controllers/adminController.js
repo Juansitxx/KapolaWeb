@@ -1,13 +1,4 @@
 import { prisma } from "../config/prisma.js";
-import { validateProduct } from "../middleware/validationMiddleware.js";
-
-// Middleware para verificar si es admin
-export const adminMiddleware = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: "Acceso denegado. Se requieren permisos de administrador." });
-  }
-  next();
-};
 
 // Obtener todos los usuarios
 export const getAllUsers = async (req, res) => {
@@ -247,7 +238,7 @@ export const getAllOrders = async (req, res) => {
 export const updateOrderStatusAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, notes } = req.body;
+    const { status } = req.body;
 
     const validStatuses = ['pendiente', 'confirmada', 'en_proceso', 'enviada', 'entregada', 'cancelada'];
     
@@ -260,10 +251,7 @@ export const updateOrderStatusAdmin = async (req, res) => {
 
     const order = await prisma.order.update({
       where: { id: parseInt(id) },
-      data: { 
-        status,
-        ...(notes && { notes })
-      },
+      data: { status },
       include: {
         user: {
           select: { id: true, name: true, email: true }

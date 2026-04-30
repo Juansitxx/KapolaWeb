@@ -9,10 +9,10 @@ import {
   getAllProductsAdmin,
   createProductAdmin,
   updateProductAdmin,
-  deleteProductAdmin,
-  adminMiddleware
+  deleteProductAdmin
 } from "../controllers/adminController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { adminMiddleware } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 

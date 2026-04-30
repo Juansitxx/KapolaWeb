@@ -7,11 +7,13 @@ import {
   clearCart
 } from "../controllers/cartController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { clienteMiddleware } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
 // Todas las rutas requieren autenticación
 router.use(authMiddleware);
+router.use(clienteMiddleware);
 
 // Rutas del carrito
 router.get("/", getCart);

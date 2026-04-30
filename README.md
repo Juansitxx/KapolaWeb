@@ -85,7 +85,7 @@ npx prisma generate
 npm run db:seed
 
 # Iniciar servidor
-npm run dev
+npm start
 ```
 
 ### 3. Configurar Frontend
@@ -124,11 +124,11 @@ chmod +x start-dev.sh
 
 ### Usuarios
 - **Admin**: `admin@galletas.com` / `admin123`
-- **Cliente**: `juan@ejemplo.com` / `cliente123`
+- **Cliente**: `cliente@galletas.com` / `cliente123`
 
 ### Productos
-- 8 productos de ejemplo con diferentes categorías
-- Imágenes de galletas de Unsplash
+- 10 productos de ejemplo con categorias New York, Chocolate, Red Velvet, Clasicas y Especiales
+- Imagenes locales servidas desde `/uploads/products`
 - Precios y stock realistas
 
 ## 📁 Estructura del Proyecto
@@ -163,10 +163,21 @@ galletas-app/
 npm run dev          # Servidor de desarrollo
 npm start            # Servidor de producción
 npm run db:migrate   # Ejecutar migraciones
-npm run db:seed      # Poblar con datos de prueba
-npm run db:reset     # Resetear base de datos
+npm run db:generate  # Generar cliente Prisma
+npm run db:seed      # Seed de desarrollo no destructivo
+npm run db:seed:dev  # Alias explicito del seed de desarrollo
+npm run db:reset:dev # Reset destructivo solo para desarrollo y luego seed
+npm run db:reset     # Alias de db:reset:dev
+npm run db:clear     # Limpieza manual con confirmacion
 npm run db:studio    # Abrir Prisma Studio
 ```
+
+### Seeds y reset local
+
+- `npm run db:seed` crea o actualiza usuarios y productos de prueba sin borrar datos existentes.
+- `npm run db:reset:dev` elimina usuarios, productos, ordenes y carritos, y luego ejecuta el seed de desarrollo.
+- Los scripts destructivos se bloquean si `NODE_ENV=production`.
+- No uses credenciales reales en `.env`; usa variables locales de desarrollo.
 
 ### Frontend
 ```bash

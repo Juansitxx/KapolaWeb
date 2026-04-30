@@ -300,14 +300,16 @@ const Profile: React.FC = () => {
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<ShoppingBag />}
-                  onClick={() => navigate('/orders')}
-                  fullWidth
-                >
-                  Mis Pedidos
-                </Button>
+                {user.role === 'cliente' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<ShoppingBag />}
+                    onClick={() => navigate('/orders')}
+                    fullWidth
+                  >
+                    Mis Pedidos
+                  </Button>
+                )}
 
                 <Button
                   variant="outlined"

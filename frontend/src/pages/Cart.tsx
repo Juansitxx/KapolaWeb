@@ -34,15 +34,20 @@ import { CartItem } from '../types';
 
 const Cart: React.FC = () => {
   const { cart, loading, updateCartItem, removeFromCart, clearCart, getTotal } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [showCheckoutDialog, setShowCheckoutDialog] = React.useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
+      return;
     }
-  }, [isAuthenticated, navigate]);
+
+    if (user?.role === 'admin') {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, user?.role, navigate]);
 
   const handleQuantityChange = async (itemId: number, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -76,7 +81,7 @@ const Cart: React.FC = () => {
     }).format(price);
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || user?.role === 'admin') {
     return null; // Se redirige automáticamente
   }
 

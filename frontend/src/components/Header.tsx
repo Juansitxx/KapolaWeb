@@ -38,6 +38,7 @@ const Header: React.FC = () => {
   const { getItemCount } = useCart();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isCliente = user?.role === 'cliente';
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -133,20 +134,22 @@ const Header: React.FC = () => {
               ))}
             </Box>
             {/* Carrito */}
-            <IconButton
-              color="inherit"
-              onClick={() => navigate('/cart')}
-              sx={{
-                color: '#ffffff',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              <Badge badgeContent={getItemCount()} color="error">
-                <ShoppingCart sx={{ color: '#ffffff' }} />
-              </Badge>
-            </IconButton>
+            {(!isAuthenticated || isCliente) && (
+              <IconButton
+                color="inherit"
+                onClick={() => navigate('/cart')}
+                sx={{
+                  color: '#ffffff',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Badge badgeContent={getItemCount()} color="error">
+                  <ShoppingCart sx={{ color: '#ffffff' }} />
+                </Badge>
+              </IconButton>
+            )}
 
             {/* Menú de usuario */}
             {isAuthenticated ? (
@@ -226,12 +229,14 @@ const Header: React.FC = () => {
           </ListItemIcon>
           <ListItemText>Mi Perfil</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => { navigate('/orders'); handleProfileMenuClose(); }}>
-          <ListItemIcon>
-            <ShoppingBag fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Mis Pedidos</ListItemText>
-        </MenuItem>
+        {isCliente && (
+          <MenuItem onClick={() => { navigate('/orders'); handleProfileMenuClose(); }}>
+            <ListItemIcon>
+              <ShoppingBag fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Mis Pedidos</ListItemText>
+          </MenuItem>
+        )}
         <Divider />
         <MenuItem onClick={handleLogout}>
           <ListItemIcon>
@@ -289,24 +294,26 @@ const Header: React.FC = () => {
                   </ListItemIcon>
                   <ListItemText primary="Mi Perfil" />
                 </ListItem>
-                <ListItem
-                  component="button"
-                  onClick={() => {
-                    navigate('/orders');
-                    setMobileMenuOpen(false);
-                  }}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <ShoppingBag />
-                  </ListItemIcon>
-                  <ListItemText primary="Mis Pedidos" />
-                </ListItem>
+                {isCliente && (
+                  <ListItem
+                    component="button"
+                    onClick={() => {
+                      navigate('/orders');
+                      setMobileMenuOpen(false);
+                    }}
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                      },
+                    }}
+                  >
+                    <ListItemIcon>
+                      <ShoppingBag />
+                    </ListItemIcon>
+                    <ListItemText primary="Mis Pedidos" />
+                  </ListItem>
+                )}
                 <ListItem 
                   component="button" 
                   onClick={handleLogout}
