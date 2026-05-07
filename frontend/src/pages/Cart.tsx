@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Stack,
 } from '@mui/material';
 import {
   Add,
@@ -26,17 +27,21 @@ import {
   ShoppingBag,
   CreditCard,
   LocalShipping,
+  Cookie,
 } from '@mui/icons-material';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { CartItem } from '../types';
+import { CartItem, CartItemConfiguration, CartSelection } from '../types';
+
+const API_BASE_NO_API = (process.env.REACT_APP_API_URL || 'http://localhost:4000').replace(/\/api\/?$/, '');
 
 const Cart: React.FC = () => {
   const { cart, loading, updateCartItem, removeFromCart, clearCart, getTotal } = useCart();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [showCheckoutDialog, setShowCheckoutDialog] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -49,20 +54,129 @@ const Cart: React.FC = () => {
     }
   }, [isAuthenticated, user?.role, navigate]);
 
-  const handleQuantityChange = async (itemId: number, newQuantity: number) => {
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
+  const normalizeImageUrl = (imageUrl?: string) => {
+    if (!imageUrl) return '';
+    return imageUrl.startsWith('http') ? imageUrl : `${API_BASE_NO_API}${imageUrl}`;
+  };
+
+  const parseConfiguration = (item: CartItem): CartItemConfiguration => {
+    if (!item.configuration) return {};
+
+    if (typeof item.configuration === 'string') {
+      try {
+        return JSON.parse(item.configuration);
+      } catch {
+        return { notes: item.configuration };
+      }
+    }
+
+    return item.configuration;
+  };
+
+  const normalizeSelections = (value: unknown): CartSelection[] => {
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .map((selection) => {
+        if (typeof selection === 'string') {
+          return { name: selection };
+        }
+
+        if (!selection || typeof selection !== 'object') {
+          return null;
+        }
+
+        const raw = selection as Record<string, any>;
+        return {
+          id: raw.id,
+          optionId: raw.optionId,
+          name: raw.name || raw.label || raw.flavor || raw.extra || 'Seleccion',
+          quantity: Number(raw.quantity || 1),
+          priceDelta: Number(raw.priceDelta || raw.additionalPrice || raw.extraPrice || 0),
+          additionalPrice: Number(raw.additionalPrice || 0),
+          extraPrice: Number(raw.extraPrice || 0),
+        };
+      })
+      .filter(Boolean) as CartSelection[];
+  };
+
+  const getFlavors = (item: CartItem) => {
+    const config = parseConfiguration(item);
+    return normalizeSelections(config.flavors || config.selectedFlavors);
+  };
+
+  const getExtras = (item: CartItem) => {
+    const config = parseConfiguration(item);
+    return normalizeSelections(config.extras || config.selectedExtras);
+  };
+
+  const getSelectionPrice = (selection: CartSelection) => {
+    return selection.priceDelta ?? selection.additionalPrice ?? selection.extraPrice ?? 0;
+  };
+
+  const getItemUnitPrice = (item: CartItem) => {
+    return item.unitPrice ?? item.product.price;
+  };
+
+  const getItemSubtotal = (item: CartItem) => {
+    return item.subtotal ?? getItemUnitPrice(item) * item.quantity;
+  };
+
+  const getItemSurcharge = (item: CartItem) => {
+    const selections = [...getFlavors(item), ...getExtras(item)];
+    return selections.reduce((total, selection) => {
+      return total + getSelectionPrice(selection) * (selection.quantity || 1);
+    }, 0);
+  };
+
+  const isConfigurableItem = (item: CartItem) => {
+    return getFlavors(item).length > 0 || getExtras(item).length > 0 || Boolean(parseConfiguration(item).notes);
+  };
+
+  const handleQuantityChange = async (item: CartItem, newQuantity: number) => {
+    setError(null);
+
     if (newQuantity <= 0) {
-      await removeFromCart(itemId);
-    } else {
-      await updateCartItem(itemId, newQuantity);
+      setError('La cantidad debe ser mayor a 0. Usa eliminar si quieres quitar el producto.');
+      return;
+    }
+
+    if (newQuantity > item.product.stock) {
+      setError(`Stock insuficiente para ${item.product.name}. Disponible: ${item.product.stock}.`);
+      return;
+    }
+
+    try {
+      await updateCartItem(item.id, newQuantity);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'No se pudo actualizar la cantidad.');
     }
   };
 
   const handleRemoveItem = async (itemId: number) => {
-    await removeFromCart(itemId);
+    setError(null);
+    try {
+      await removeFromCart(itemId);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'No se pudo eliminar el producto.');
+    }
   };
 
   const handleClearCart = async () => {
-    await clearCart();
+    setError(null);
+    try {
+      await clearCart();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'No se pudo limpiar el carrito.');
+    }
   };
 
   const handleCheckout = () => {
@@ -70,22 +184,14 @@ const Cart: React.FC = () => {
   };
 
   const handleConfirmCheckout = () => {
-    // Aquí iría la lógica para procesar el pedido
     navigate('/checkout');
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-    }).format(price);
-  };
-
   if (!isAuthenticated || user?.role === 'admin') {
-    return null; // Se redirige automáticamente
+    return null;
   }
 
-  if (loading) {
+  if (loading && !cart) {
     return (
       <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
         <CircularProgress size={60} />
@@ -101,17 +207,17 @@ const Cart: React.FC = () => {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Paper
           sx={{
-            p: 6,
+            p: { xs: 4, md: 6 },
             textAlign: 'center',
-            background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
+            background: 'linear-gradient(135deg, #fff7f8 0%, #ffdde1 100%)',
           }}
         >
-          <ShoppingCart sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+          <ShoppingCart sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Tu carrito está vacío
+            Tu carrito esta vacio
           </Typography>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-            ¡Agrega algunas deliciosas galletas para comenzar!
+            Agrega algunas galletas para comenzar tu pedido.
           </Typography>
           <Button
             variant="contained"
@@ -123,7 +229,7 @@ const Cart: React.FC = () => {
               '&:hover': { backgroundColor: '#d4a5ad' },
             }}
           >
-            Explorar Productos
+            Explorar productos
           </Button>
         </Paper>
       </Container>
@@ -132,133 +238,267 @@ const Cart: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <ShoppingCart sx={{ mr: 2, fontSize: 40, color: 'primary.main' }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 4 }}>
+        <ShoppingCart sx={{ fontSize: 40, color: 'primary.main' }} />
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           Mi Carrito
         </Typography>
         <Chip
           label={`${cart.items.length} producto${cart.items.length !== 1 ? 's' : ''}`}
           color="primary"
-          sx={{ ml: 2 }}
         />
       </Box>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <Grid container spacing={3}>
-        {/* Lista de productos */}
         <Grid item xs={12} md={8}>
-          {cart.items.map((item: CartItem) => (
-            <Card key={item.id} sx={{ mb: 2 }}>
-              <CardContent>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={3}>
-                    <Box
-                      component="img"
-                      src={item.product.imageUrl || '/placeholder-cookie.jpg'}
-                      alt={item.product.name}
-                      sx={{
-                        width: '100%',
-                        height: 120,
-                        objectFit: 'cover',
-                        borderRadius: 1,
-                        backgroundColor: '#f5f5f5',
-                      }}
-                    />
+          {cart.items.map((item: CartItem) => {
+            const flavors = getFlavors(item);
+            const extras = getExtras(item);
+            const configuration = parseConfiguration(item);
+            const surcharge = getItemSurcharge(item);
+            const unitPrice = getItemUnitPrice(item);
+            const subtotal = getItemSubtotal(item);
+            const isOutOfStock = item.product.stock <= 0;
+            const isMaxQuantity = item.quantity >= item.product.stock;
+
+            return (
+              <Card
+                key={item.id}
+                sx={{
+                  mb: 2,
+                  border: '1px solid rgba(238, 156, 167, 0.2)',
+                  boxShadow: '0 8px 22px rgba(74, 35, 41, 0.08)',
+                }}
+              >
+                <CardContent>
+                  <Grid container spacing={2.5}>
+                    <Grid item xs={12} sm={3}>
+                      {normalizeImageUrl(item.product.imageUrl) ? (
+                        <Box
+                          component="img"
+                          src={normalizeImageUrl(item.product.imageUrl)}
+                          alt={item.product.name}
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '1 / 1',
+                            objectFit: 'cover',
+                            borderRadius: 2,
+                            backgroundColor: '#fff7f8',
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: '100%',
+                            aspectRatio: '1 / 1',
+                            borderRadius: 2,
+                            bgcolor: '#fff7f8',
+                            color: '#b85c69',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Cookie sx={{ fontSize: 56 }} />
+                        </Box>
+                      )}
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 1 }}>
+                        {item.product.category && (
+                          <Chip label={item.product.category} size="small" variant="outlined" />
+                        )}
+                        <Chip
+                          label={isOutOfStock ? 'Agotado' : 'Disponible'}
+                          size="small"
+                          color={isOutOfStock ? 'error' : 'success'}
+                        />
+                        {isConfigurableItem(item) && (
+                          <Chip label="Configurable" size="small" color="primary" />
+                        )}
+                      </Stack>
+
+                      <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
+                        {item.product.name}
+                      </Typography>
+
+                      {item.product.description && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                          {item.product.description}
+                        </Typography>
+                      )}
+
+                      {flavors.length > 0 && (
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5 }}>
+                            Sabores seleccionados
+                          </Typography>
+                          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                            {flavors.map((flavor, index) => (
+                              <Chip
+                                key={`${flavor.name}-${index}`}
+                                label={`${flavor.quantity && flavor.quantity > 1 ? `${flavor.quantity}x ` : ''}${flavor.name}${getSelectionPrice(flavor) > 0 ? ` +${formatPrice(getSelectionPrice(flavor))}` : ''}`}
+                                size="small"
+                                sx={{ bgcolor: '#fff7f8' }}
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+
+                      {extras.length > 0 && (
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5 }}>
+                            Extras
+                          </Typography>
+                          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                            {extras.map((extra, index) => (
+                              <Chip
+                                key={`${extra.name}-${index}`}
+                                label={`${extra.quantity && extra.quantity > 1 ? `${extra.quantity}x ` : ''}${extra.name}${getSelectionPrice(extra) > 0 ? ` +${formatPrice(getSelectionPrice(extra))}` : ''}`}
+                                size="small"
+                                color="secondary"
+                                variant="outlined"
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+
+                      {configuration.notes && (
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                          {configuration.notes}
+                        </Alert>
+                      )}
+
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Stock disponible: {item.product.stock}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={3}>
+                      <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Precio base
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                          {formatPrice(item.product.price)}
+                        </Typography>
+                        {surcharge > 0 && (
+                          <>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                              Recargos
+                            </Typography>
+                            <Typography variant="body1" color="warning.main" sx={{ fontWeight: 800 }}>
+                              +{formatPrice(surcharge)}
+                            </Typography>
+                          </>
+                        )}
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                          Precio final unitario
+                        </Typography>
+                        <Typography variant="h6" color="primary" sx={{ fontWeight: 900 }}>
+                          {formatPrice(unitPrice)}
+                        </Typography>
+                      </Box>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {item.product.name}
-                    </Typography>
-                    {item.product.category && (
-                      <Chip
-                        label={item.product.category}
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: { xs: 'stretch', sm: 'center' },
+                      gap: 2,
+                      flexDirection: { xs: 'column', sm: 'row' },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body1" sx={{ mr: 1, fontWeight: 700 }}>
+                        Cantidad
+                      </Typography>
+                      <IconButton
                         size="small"
-                        variant="outlined"
-                        sx={{ mb: 1 }}
-                      />
-                    )}
-                    <Typography variant="body2" color="text.secondary">
-                      Stock: {item.product.stock} unidades
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                        {formatPrice(item.product.price)}
+                        onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                        disabled={item.quantity <= 1 || loading}
+                      >
+                        <Remove />
+                      </IconButton>
+                      <Typography variant="h6" sx={{ minWidth: 40, textAlign: 'center' }}>
+                        {item.quantity}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        por unidad
-                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                        disabled={isOutOfStock || isMaxQuantity || loading}
+                      >
+                        <Add />
+                      </IconButton>
                     </Box>
-                  </Grid>
-                </Grid>
 
-                <Divider sx={{ my: 2 }} />
-
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body1" sx={{ mr: 2 }}>
-                      Cantidad:
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                      disabled={item.quantity <= 1}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: { xs: 'space-between', sm: 'flex-end' },
+                        gap: 2,
+                      }}
                     >
-                      <Remove />
-                    </IconButton>
-                    <Typography variant="h6" sx={{ minWidth: 40, textAlign: 'center' }}>
-                      {item.quantity}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                      disabled={item.quantity >= item.product.stock}
-                    >
-                      <Add />
-                    </IconButton>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Total item
+                        </Typography>
+                        <Typography variant="h5" color="primary" sx={{ fontWeight: 900 }}>
+                          {formatPrice(subtotal)}
+                        </Typography>
+                      </Box>
+                      <IconButton
+                        color="error"
+                        onClick={() => handleRemoveItem(item.id)}
+                        disabled={loading}
+                        aria-label={`Eliminar ${item.product.name}`}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Box>
                   </Box>
+                </CardContent>
+              </Card>
+            );
+          })}
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                      {formatPrice(item.product.price * item.quantity)}
-                    </Typography>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleRemoveItem(item.id)}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
-
-          <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+          <Box sx={{ display: 'flex', gap: 2, mt: 3, flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
               color="error"
               onClick={handleClearCart}
               disabled={loading}
             >
-              Limpiar Carrito
+              Limpiar carrito
             </Button>
             <Button
               variant="outlined"
               onClick={() => navigate('/')}
             >
-              Seguir Comprando
+              Seguir comprando
             </Button>
           </Box>
         </Grid>
 
-        {/* Resumen del pedido */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ position: 'sticky', top: 20 }}>
+          <Card sx={{ position: { md: 'sticky' }, top: 20 }}>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Resumen del Pedido
+                Resumen del pedido
               </Typography>
 
               <Box sx={{ mb: 3 }}>
@@ -267,8 +507,8 @@ const Cart: React.FC = () => {
                   <Typography>{formatPrice(getTotal())}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography>Envío:</Typography>
-                  <Typography color="success.main">Gratis</Typography>
+                  <Typography>Envio:</Typography>
+                  <Typography color="success.main">Por definir</Typography>
                 </Box>
                 <Divider sx={{ my: 1 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -284,7 +524,7 @@ const Cart: React.FC = () => {
               <Alert severity="info" sx={{ mb: 3 }}>
                 <Typography variant="body2">
                   <LocalShipping sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                  Envío gratis en pedidos mayores a $50.000 COP
+                  Revisa sabores, extras y cantidades antes de confirmar.
                 </Typography>
               </Alert>
 
@@ -296,29 +536,29 @@ const Cart: React.FC = () => {
                 onClick={handleCheckout}
                 disabled={loading || cart.items.length === 0}
                 sx={{
-                  backgroundColor: '#8B4513',
-                  '&:hover': { backgroundColor: '#A0522D' },
+                  backgroundColor: '#ee9ca7',
+                  '&:hover': { backgroundColor: '#d98291' },
                   py: 1.5,
+                  fontWeight: 800,
                 }}
               >
-                Proceder al Pago
+                Proceder al pago
               </Button>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Dialog de confirmación de checkout */}
       <Dialog
         open={showCheckoutDialog}
         onClose={() => setShowCheckoutDialog(false)}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Confirmar Pedido</DialogTitle>
+        <DialogTitle>Confirmar pedido</DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            ¿Estás seguro de que quieres proceder con este pedido?
+            Revisa que los productos, sabores, extras y cantidades sean correctos antes de continuar.
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Total: {formatPrice(getTotal())}
@@ -336,7 +576,7 @@ const Cart: React.FC = () => {
               '&:hover': { backgroundColor: '#d4a5ad' },
             }}
           >
-            Confirmar Pedido
+            Confirmar pedido
           </Button>
         </DialogActions>
       </Dialog>

@@ -105,7 +105,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const getTotal = (): number => {
     if (!cart || !cart.items) return 0;
-    return cart.items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    return cart.items.reduce((total, item) => {
+      const itemSubtotal = item.subtotal ?? ((item.unitPrice ?? item.product.price) * item.quantity);
+      return total + itemSubtotal;
+    }, 0);
   };
 
   const value: CartContextType = {

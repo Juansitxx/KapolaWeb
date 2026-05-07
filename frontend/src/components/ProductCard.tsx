@@ -8,14 +8,13 @@ import {
   Button,
   Chip,
   Box,
-  IconButton,
-  Tooltip,
+  Stack,
 } from '@mui/material';
 import {
   AddShoppingCart,
-  Favorite,
-  FavoriteBorder,
-  Visibility,
+  Cookie,
+  CardGiftcard,
+  Inventory,
 } from '@mui/icons-material';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
@@ -27,19 +26,31 @@ interface ProductCardProps {
   showAddToCart?: boolean;
 }
 
+const API_BASE_NO_API = (process.env.REACT_APP_API_URL || 'http://localhost:4000').replace(/\/api\/?$/, '');
+
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  onViewDetails,
   showAddToCart = true,
 }) => {
   const { addToCart, loading } = useCart();
   const { isAuthenticated, user } = useAuth();
-  const [isFavorite, setIsFavorite] = React.useState(false);
+  const [imageFailed, setImageFailed] = React.useState(false);
   const canUseCart = isAuthenticated && user?.role === 'cliente';
+
+  const imageUrl = product.imageUrl
+    ? product.imageUrl.startsWith('http')
+      ? product.imageUrl
+      : `${API_BASE_NO_API}${product.imageUrl}`
+    : '';
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      alert('Debes iniciar sesión para agregar productos al carrito');
+      alert('Debes iniciar sesion para agregar productos al carrito');
+      return;
+    }
+
+    if (!canUseCart) {
+      alert('Solo los clientes pueden agregar productos al carrito');
       return;
     }
 
@@ -51,138 +62,127 @@ const ProductCard: React.FC<ProductCardProps> = ({
     }
   };
 
-  const handleToggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-  };
-
-  const handleViewDetails = () => {
-    if (onViewDetails) {
-      onViewDetails(product);
-    }
-  };
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
+      maximumFractionDigits: 0,
     }).format(price);
   };
 
-  const isOutOfStock = product.stock === 0;
+  const isOutOfStock = product.stock <= 0;
+  const description = product.description || 'Galleta horneada artesanalmente, ideal para ordenar hoy.';
+  const lowerName = product.name.toLowerCase();
+  const productKind = lowerName.includes('caja')
+    ? 'Caja'
+    : lowerName.includes('combo')
+      ? 'Combo'
+      : product.category || 'Galleta';
+  const placeholderIcon = lowerName.includes('caja')
+    ? <Inventory sx={{ fontSize: 72, opacity: 0.85 }} />
+    : lowerName.includes('combo')
+      ? <CardGiftcard sx={{ fontSize: 72, opacity: 0.85 }} />
+      : <Cookie sx={{ fontSize: 72, opacity: 0.85 }} />;
 
   return (
     <Card
       sx={{
-        maxWidth: 345,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'all 0.3s ease-in-out',
-        borderRadius: 3,
+        borderRadius: 2,
         overflow: 'hidden',
-        margin: '8px',
-        position: 'relative',
-        zIndex: 1,
+        border: '1px solid rgba(238, 156, 167, 0.2)',
+        boxShadow: '0 8px 22px rgba(74, 35, 41, 0.08)',
+        transition: 'transform 160ms ease, box-shadow 160ms ease',
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 8px 16px rgba(0,0,0,0.12)',
-          zIndex: 2,
+          transform: 'translateY(-3px)',
+          boxShadow: '0 12px 28px rgba(74, 35, 41, 0.14)',
         },
       }}
     >
-      <Box sx={{ position: 'relative' }}>
-        <CardMedia
-          component="img"
-          height="200"
-          image={product.imageUrl || '/placeholder-cookie.jpg'}
-          alt={product.name}
-          sx={{
-            objectFit: 'cover',
-            backgroundColor: '#f5f5f5',
-          }}
-          onError={(e: any) => {
-            // Si falla la imagen, usar placeholder
-            if (product.imageUrl) {
-              console.error('Error al cargar imagen del producto:', product.imageUrl);
-              e.target.src = '/placeholder-cookie.jpg';
-            }
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            display: 'flex',
-            gap: 1,
-          }}
-        >
-          <Tooltip title={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
-            <IconButton
-              size="small"
-              onClick={handleToggleFavorite}
-              sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                },
-              }}
-            >
-              {isFavorite ? (
-                <Favorite color="error" fontSize="small" />
-              ) : (
-                <FavoriteBorder fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Ver detalles">
-            <IconButton
-              size="small"
-              onClick={handleViewDetails}
-              sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                },
-              }}
-            >
-              <Visibility fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        {isOutOfStock && (
+      <Box sx={{ position: 'relative', aspectRatio: '4 / 3', bgcolor: '#fff7f8' }}>
+        {imageUrl && !imageFailed ? (
+          <CardMedia
+            component="img"
+            image={imageUrl}
+            alt={product.name}
+            onError={() => setImageFailed(true)}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        ) : (
           <Box
             sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              width: '100%',
+              height: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              background: 'linear-gradient(135deg, #fff7f8 0%, #ffdde1 100%)',
+              color: '#b85c69',
             }}
           >
-            <Chip
-              label="Agotado"
-              color="error"
-              variant="filled"
-              sx={{ fontWeight: 'bold' }}
-            />
+            {placeholderIcon}
           </Box>
         )}
+
+        <Chip
+          label={isOutOfStock ? 'Agotado' : 'Disponible'}
+          color={isOutOfStock ? 'error' : 'success'}
+          size="small"
+          sx={{
+            position: 'absolute',
+            top: 12,
+            left: 12,
+            fontWeight: 800,
+            bgcolor: isOutOfStock ? undefined : '#2e7d32',
+          }}
+        />
+        <Chip
+          label={productKind}
+          size="small"
+          sx={{
+            position: 'absolute',
+            right: 12,
+            bottom: 12,
+            fontWeight: 900,
+            bgcolor: 'rgba(255,255,255,0.9)',
+            color: '#7a3b45',
+          }}
+        />
       </Box>
 
-      <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+      <CardContent sx={{ flexGrow: 1, p: 2.25 }}>
+        <Stack direction="row" spacing={1} sx={{ mb: 1 }} useFlexGap flexWrap="wrap">
+          {product.category && (
+            <Chip
+              label={product.category}
+              size="small"
+              variant="outlined"
+              sx={{
+                borderColor: '#ee9ca7',
+                color: '#9d4f5d',
+                fontWeight: 700,
+              }}
+            />
+          )}
+          {!isOutOfStock && product.stock <= 5 && (
+            <Chip label="Quedan pocas" size="small" color="warning" />
+          )}
+        </Stack>
+
         <Typography
-          gutterBottom
           variant="h6"
           component="h3"
           sx={{
-            fontWeight: 'bold',
-            fontSize: '1.1rem',
-            lineHeight: 1.2,
+            fontWeight: 800,
+            color: '#332025',
+            lineHeight: 1.18,
+            minHeight: 44,
             mb: 1,
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -193,80 +193,60 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {product.name}
         </Typography>
 
-        {product.description && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              mb: 2,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {product.description}
-          </Typography>
-        )}
-
-        <Box sx={{ mb: 1 }}>
-  <Typography
-    variant="h6"
-    color="primary"
-    sx={{ fontWeight: 'bold' }}
-  >
-    {formatPrice(product.price)}
-  </Typography>
-  {product.category && (
-    <Chip
-      label={product.category}
-      size="small"
-      variant="outlined"
-      color="primary"
-      sx={{ mt: 0.5 }}
-    />
-  )}
-</Box>
-
-
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ fontSize: '0.875rem' }}
-        >
-          Stock: {product.stock} unidades
-        </Typography>
-      </CardContent>
-
-      <CardActions sx={{ p: 2, pt: 0 }}>
-        <Button
-          fullWidth
-          variant="contained"
-          startIcon={<AddShoppingCart />}
-          onClick={handleAddToCart}
-          disabled={isOutOfStock || loading || !canUseCart}
           sx={{
-            backgroundColor: '#ee9ca7',
-            '&:hover': {
-              backgroundColor: '#d4a5ad',
-            },
-            '&:disabled': {
-              backgroundColor: '#e0e0e0',
-              color: '#9e9e9e',
-            },
+            minHeight: 42,
+            mb: 2,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}
         >
-          {isOutOfStock
-            ? 'Agotado'
-            : !isAuthenticated
-            ? 'Inicia sesión'
-            : !canUseCart
-            ? 'Solo clientes'
-            : loading
-            ? 'Agregando...'
-            : 'Agregar al carrito'}
-        </Button>
-      </CardActions>
+          {description}
+        </Typography>
+
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 1 }}>
+          <Typography variant="h5" sx={{ fontWeight: 900, color: '#b85c69' }}>
+            {formatPrice(product.price)}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+            {isOutOfStock ? 'Sin stock' : `${product.stock} disponibles`}
+          </Typography>
+        </Box>
+      </CardContent>
+
+      {showAddToCart && (
+        <CardActions sx={{ p: 2.25, pt: 0 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<AddShoppingCart />}
+            onClick={handleAddToCart}
+            disabled={isOutOfStock || loading || (isAuthenticated && !canUseCart)}
+            sx={{
+              backgroundColor: '#ee9ca7',
+              py: 1.15,
+              fontWeight: 800,
+              '&:hover': { backgroundColor: '#d98291' },
+              '&:disabled': {
+                backgroundColor: '#e8d9dc',
+                color: '#9e858b',
+              },
+            }}
+          >
+            {isOutOfStock
+              ? 'Agotado'
+              : loading
+                ? 'Agregando...'
+                : isAuthenticated && !canUseCart
+                  ? 'Solo clientes'
+                  : 'Agregar'}
+          </Button>
+        </CardActions>
+      )}
     </Card>
   );
 };

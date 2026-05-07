@@ -16,6 +16,7 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Container,
 } from '@mui/material';
 import {
   ShoppingCart,
@@ -26,11 +27,12 @@ import {
   Home,
   AdminPanelSettings,
   ShoppingBag,
+  LocationOn,
+  AccountCircle,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import SearchBar from './SearchBar';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -40,244 +42,163 @@ const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isCliente = user?.role === 'cliente';
   const isAdmin = user?.role === 'admin';
-  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
 
-  const handleProfileMenuClose = () => {
-    setAnchorEl(null);
+  const closeProfileMenu = () => setAnchorEl(null);
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const goTo = (path: string) => {
+    navigate(path);
+    closeMobileMenu();
+    closeProfileMenu();
   };
 
   const handleLogout = () => {
     logout();
-    handleProfileMenuClose();
+    closeProfileMenu();
+    closeMobileMenu();
     navigate('/');
-  };
-
-  const handleSearch = (query: string) => {
-    if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-    }
   };
 
   const menuItems = [
     { label: 'Inicio', path: '/', icon: <Home /> },
-    { label: 'Productos', path: '/products', icon: <ShoppingBag /> },
+    { label: 'Ordenar', path: '/ordenar', icon: <ShoppingBag /> },
+    { label: 'Ubicacion', path: '/#ubicacion', icon: <LocationOn /> },
   ];
 
   if (isAdmin) {
-    menuItems.push({
-      label: 'Panel Admin',
-      path: '/admin',
-      icon: <AdminPanelSettings />,
-    });
+    menuItems.push({ label: 'Panel Admin', path: '/admin', icon: <AdminPanelSettings /> });
   }
 
   return (
     <>
-      <AppBar 
-        position="sticky" 
-        sx={{ 
-          background: 'linear-gradient(to right, #ffdde1, #ee9ca7)',
-          borderRadius: 0,
-          boxShadow: 'none',
-          borderBottom: '1px solid rgba(238, 156, 167, 0.2)'
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          bgcolor: 'rgba(255, 247, 248, 0.94)',
+          color: '#3f1f25',
+          borderBottom: '1px solid rgba(238, 156, 167, 0.22)',
+          backdropFilter: 'blur(12px)',
         }}
       >
-        <Toolbar sx={{ borderRadius: 0 }}>
-          {/* Logo y título */}
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              flexGrow: 0,
-              mr: 4,
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
-              color: '#ffffff'
-            }}
-            onClick={() => navigate('/')}
-          >
-             Kapola
-          </Typography>
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ minHeight: 72, gap: 2 }}>
+            <Typography
+              variant="h5"
+              component="button"
+              onClick={() => goTo('/')}
+              sx={{
+                border: 0,
+                bgcolor: 'transparent',
+                cursor: 'pointer',
+                fontWeight: 950,
+                color: '#b85c69',
+                letterSpacing: 0,
+                mr: { xs: 'auto', md: 2 },
+              }}
+            >
+              Kapola
+            </Typography>
 
-          {/* Búsqueda */}
-          <Box sx={{ flexGrow: 1, maxWidth: 400, mx: 2 }}>
-            <SearchBar onSearch={handleSearch} fullWidth />
-          </Box>
-
-          {/* Espaciador para empujar elementos a la derecha */}
-          <Box sx={{ flexGrow: 1 }} />
-
-          {/* Elementos del lado derecho */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Navegación desktop */}
-            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
               {menuItems.map((item) => (
                 <Button
                   key={item.path}
-                  color="inherit"
                   startIcon={item.icon}
-                  onClick={() => navigate(item.path)}
-                  sx={{ 
-                    textTransform: 'none',
-                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
-                    color: '#ffffff',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.5)'
-                    }
+                  onClick={() => goTo(item.path)}
+                  sx={{
+                    color: '#4a2329',
+                    fontWeight: 800,
+                    px: 1.5,
+                    '&:hover': { bgcolor: '#fff0f2' },
                   }}
                 >
                   {item.label}
                 </Button>
               ))}
             </Box>
-            {/* Carrito */}
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            <Button
+              variant="contained"
+              onClick={() => goTo('/ordenar')}
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                bgcolor: '#ee9ca7',
+                color: 'white',
+                fontWeight: 900,
+                px: 2.5,
+                '&:hover': { bgcolor: '#d98291' },
+              }}
+            >
+              Ordenar ahora
+            </Button>
+
             {(!isAuthenticated || isCliente) && (
-              <IconButton
-                color="inherit"
-                onClick={() => navigate('/cart')}
-                sx={{
-                  color: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  }
-                }}
-              >
+              <IconButton onClick={() => goTo('/cart')} sx={{ color: '#4a2329' }}>
                 <Badge badgeContent={getItemCount()} color="error">
-                  <ShoppingCart sx={{ color: '#ffffff' }} />
+                  <ShoppingCart />
                 </Badge>
               </IconButton>
             )}
 
-            {/* Menú de usuario */}
             {isAuthenticated ? (
-              <IconButton
-                size="large"
-                edge="end"
-                aria-label="cuenta de usuario"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleProfileMenuOpen}
-                color="inherit"
-              >
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'rgba(255, 255, 255, 0.2)' }}>
+              <IconButton onClick={(event) => setAnchorEl(event.currentTarget)}>
+                <Avatar sx={{ width: 34, height: 34, bgcolor: '#ee9ca7', color: '#fff', fontWeight: 900 }}>
                   {user?.name?.charAt(0).toUpperCase()}
                 </Avatar>
               </IconButton>
             ) : (
               <Button
-                color="inherit"
                 startIcon={<Login />}
-                onClick={() => navigate('/login')}
-                sx={{ 
-                  textTransform: 'none',
-                  textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
-                  color: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    textShadow: '1px 1px 3px rgba(0, 0, 0, 0.5)'
-                  }
-                }}
+                onClick={() => goTo('/login')}
+                sx={{ display: { xs: 'none', sm: 'inline-flex' }, color: '#4a2329', fontWeight: 800 }}
               >
-                Iniciar Sesión
+                Mi cuenta
               </Button>
             )}
-          </Box>
 
-          {/* Menú móvil */}
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menú"
-            onClick={() => setMobileMenuOpen(true)}
-            sx={{ 
-              display: { xs: 'block', md: 'none' }, 
-              ml: 1,
-              color: '#ffffff',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              }
-            }}
-          >
-            <MenuIcon sx={{ color: '#ffffff' }} />
-          </IconButton>
-        </Toolbar>
+            <IconButton
+              aria-label="menu"
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{ display: { xs: 'inline-flex', md: 'none' }, color: '#4a2329' }}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Toolbar>
+        </Container>
       </AppBar>
 
-      {/* Menú de perfil */}
-      <Menu
-        id="menu-appbar"
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        keepMounted
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        open={Boolean(anchorEl)}
-        onClose={handleProfileMenuClose}
-      >
-        <MenuItem onClick={() => { navigate('/profile'); handleProfileMenuClose(); }}>
-          <ListItemIcon>
-            <Person fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Mi Perfil</ListItemText>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={closeProfileMenu}>
+        <MenuItem onClick={() => goTo('/profile')}>
+          <ListItemIcon><Person fontSize="small" /></ListItemIcon>
+          <ListItemText>Mi cuenta</ListItemText>
         </MenuItem>
         {isCliente && (
-          <MenuItem onClick={() => { navigate('/orders'); handleProfileMenuClose(); }}>
-            <ListItemIcon>
-              <ShoppingBag fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Mis Pedidos</ListItemText>
+          <MenuItem onClick={() => goTo('/orders')}>
+            <ListItemIcon><ShoppingBag fontSize="small" /></ListItemIcon>
+            <ListItemText>Mis pedidos</ListItemText>
           </MenuItem>
         )}
         {isAdmin && (
-          <MenuItem onClick={() => { navigate('/admin'); handleProfileMenuClose(); }}>
-            <ListItemIcon>
-              <AdminPanelSettings fontSize="small" />
-            </ListItemIcon>
+          <MenuItem onClick={() => goTo('/admin')}>
+            <ListItemIcon><AdminPanelSettings fontSize="small" /></ListItemIcon>
             <ListItemText>Panel Admin</ListItemText>
           </MenuItem>
         )}
         <Divider />
         <MenuItem onClick={handleLogout}>
-          <ListItemIcon>
-            <Logout fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Cerrar Sesión</ListItemText>
+          <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
+          <ListItemText>Cerrar sesion</ListItemText>
         </MenuItem>
       </Menu>
 
-      {/* Drawer móvil */}
-      <Drawer
-        anchor="right"
-        open={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      >
-        <Box sx={{ width: 250, pt: 2 }}>
+      <Drawer anchor="right" open={mobileMenuOpen} onClose={closeMobileMenu}>
+        <Box sx={{ width: 280, pt: 2 }}>
           <List>
             {menuItems.map((item) => (
-              <ListItem
-                key={item.path}
-                component="button"
-                onClick={() => {
-                  navigate(item.path);
-                  setMobileMenuOpen(false);
-                }}
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  },
-                }}
-              >
+              <ListItem key={item.path} component="button" onClick={() => goTo(item.path)} sx={{ cursor: 'pointer' }}>
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.label} />
               </ListItem>
@@ -285,78 +206,25 @@ const Header: React.FC = () => {
             <Divider sx={{ my: 1 }} />
             {isAuthenticated ? (
               <>
-                <ListItem
-                  component="button"
-                  onClick={() => {
-                    navigate('/profile');
-                    setMobileMenuOpen(false);
-                  }}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <Person />
-                  </ListItemIcon>
-                  <ListItemText primary="Mi Perfil" />
+                <ListItem component="button" onClick={() => goTo('/profile')} sx={{ cursor: 'pointer' }}>
+                  <ListItemIcon><AccountCircle /></ListItemIcon>
+                  <ListItemText primary="Mi cuenta" />
                 </ListItem>
                 {isCliente && (
-                  <ListItem
-                    component="button"
-                    onClick={() => {
-                      navigate('/orders');
-                      setMobileMenuOpen(false);
-                    }}
-                    sx={{
-                      cursor: 'pointer',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                      },
-                    }}
-                  >
-                    <ListItemIcon>
-                      <ShoppingBag />
-                    </ListItemIcon>
-                    <ListItemText primary="Mis Pedidos" />
+                  <ListItem component="button" onClick={() => goTo('/orders')} sx={{ cursor: 'pointer' }}>
+                    <ListItemIcon><ShoppingBag /></ListItemIcon>
+                    <ListItemText primary="Mis pedidos" />
                   </ListItem>
                 )}
-                <ListItem 
-                  component="button" 
-                  onClick={handleLogout}
-                  sx={{
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <Logout />
-                  </ListItemIcon>
-                  <ListItemText primary="Cerrar Sesión" />
+                <ListItem component="button" onClick={handleLogout} sx={{ cursor: 'pointer' }}>
+                  <ListItemIcon><Logout /></ListItemIcon>
+                  <ListItemText primary="Cerrar sesion" />
                 </ListItem>
               </>
             ) : (
-              <ListItem
-                component="button"
-                onClick={() => {
-                  navigate('/login');
-                  setMobileMenuOpen(false);
-                }}
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                  },
-                }}
-              >
-                <ListItemIcon>
-                  <Login />
-                </ListItemIcon>
-                <ListItemText primary="Iniciar Sesión" />
+              <ListItem component="button" onClick={() => goTo('/login')} sx={{ cursor: 'pointer' }}>
+                <ListItemIcon><Login /></ListItemIcon>
+                <ListItemText primary="Mi cuenta" />
               </ListItem>
             )}
           </List>

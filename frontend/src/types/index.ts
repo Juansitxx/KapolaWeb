@@ -25,6 +25,28 @@ export interface CartItem {
   product: Product;
   quantity: number;
   createdAt: string;
+  configuration?: CartItemConfiguration | string | null;
+  unitPrice?: number;
+  subtotal?: number;
+}
+
+export interface CartSelection {
+  id?: string | number;
+  optionId?: string | number;
+  name: string;
+  quantity?: number;
+  priceDelta?: number;
+  additionalPrice?: number;
+  extraPrice?: number;
+}
+
+export interface CartItemConfiguration {
+  flavors?: CartSelection[];
+  selectedFlavors?: CartSelection[];
+  extras?: CartSelection[];
+  selectedExtras?: CartSelection[];
+  notes?: string;
+  [key: string]: unknown;
 }
 
 export interface Cart {
@@ -43,6 +65,8 @@ export interface OrderItem {
   product: Product;
   quantity: number;
   subtotal: number;
+  configuration?: CartItemConfiguration | string | null;
+  productSnapshot?: any;
 }
 
 export interface Order {

@@ -7,6 +7,7 @@ import { CartProvider } from './contexts/CartContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
+import Order from './pages/Order';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
@@ -28,12 +29,12 @@ const theme = createTheme({
       dark: '#e6c7cb',
     },
     background: {
-      default: '#fafafa',
+      default: '#fffaf8',
       paper: '#ffffff',
     },
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
     h1: {
       fontWeight: 700,
     },
@@ -152,8 +153,9 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
-                  <Route path="/products" element={<Home />} />
-                  <Route path="/search" element={<Home />} />
+                  <Route path="/ordenar" element={<Order />} />
+                  <Route path="/products" element={<Order />} />
+                  <Route path="/search" element={<Order />} />
                   <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                   <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
                   <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />

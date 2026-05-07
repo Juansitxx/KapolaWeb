@@ -164,8 +164,9 @@ npm run dev          # Servidor de desarrollo
 npm start            # Servidor de producción
 npm run db:migrate   # Ejecutar migraciones
 npm run db:generate  # Generar cliente Prisma
-npm run db:seed      # Seed de desarrollo no destructivo
-npm run db:seed:dev  # Alias explicito del seed de desarrollo
+npm run db:seed      # Seed demo seguro, no destructivo
+npm run db:seed:demo # Seed demo seguro, no destructivo
+npm run db:seed:dev  # Alias explicito del seed demo
 npm run db:reset:dev # Reset destructivo solo para desarrollo y luego seed
 npm run db:reset     # Alias de db:reset:dev
 npm run db:clear     # Limpieza manual con confirmacion
@@ -174,8 +175,11 @@ npm run db:studio    # Abrir Prisma Studio
 
 ### Seeds y reset local
 
-- `npm run db:seed` crea o actualiza usuarios y productos de prueba sin borrar datos existentes.
-- `npm run db:reset:dev` elimina usuarios, productos, ordenes y carritos, y luego ejecuta el seed de desarrollo.
+- `npm run db:seed:demo` crea o actualiza usuarios demo y productos realistas de Kapola sin borrar datos existentes.
+- `npm run db:seed` y `npm run db:seed:dev` apuntan al mismo seed demo seguro.
+- El seed demo crea el admin `admin@galletas.com / admin123` y el cliente `cliente@galletas.com / cliente123`.
+- El catalogo demo incluye categorias: New York, Chocolate, Red Velvet, Clasicas, Especiales y Cajas.
+- `npm run db:reset:dev` elimina usuarios, productos, ordenes y carritos, y luego ejecuta el seed de desarrollo. Usalo solo si aceptas perder datos locales.
 - Los scripts destructivos se bloquean si `NODE_ENV=production`.
 - No uses credenciales reales en `.env`; usa variables locales de desarrollo.
 

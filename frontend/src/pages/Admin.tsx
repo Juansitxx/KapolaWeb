@@ -30,6 +30,10 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Tabs,
+  Tab,
+  Stack,
+  Divider,
 } from '@mui/material';
 import {
   Add,
@@ -37,21 +41,33 @@ import {
   Delete,
   AdminPanelSettings,
   ShoppingBag,
-  AttachMoney,
   Inventory,
   CheckCircle,
-  Cancel,
+  ReceiptLong,
+  People,
+  Visibility,
+  Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { adminService, getApiErrorMessage } from '../services/api';
-import { Product } from '../types';
+import { CartItemConfiguration, CartSelection, Order, OrderItem, Product, User } from '../types';
+
+const API_BASE_NO_API = (process.env.REACT_APP_API_URL || 'http://localhost:4000').replace(/\/api\/?$/, '');
+
+const ORDER_STATUSES = ['pendiente', 'confirmada', 'en_proceso', 'enviada', 'entregada', 'cancelada'];
+const CATEGORIES = ['New York', 'Chocolate', 'Red Velvet', 'Clasicas', 'Especiales', 'Cajas'];
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [sectionLoading, setSectionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -59,11 +75,9 @@ const Admin: React.FC = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
 
-  // Backend base (sin /api) para construir URLs de imagen cuando vienen relativas
-  const API_BASE_NO_API = (process.env.REACT_APP_API_URL || 'http://localhost:4000').replace(/\/api\/?$/, '');
-
-  // Form state
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -74,14 +88,6 @@ const Admin: React.FC = () => {
     active: true,
   });
 
-  // Stats
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    activeProducts: 0,
-    lowStock: 0,
-  });
-
-  // Verificar si es admin
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -94,35 +100,162 @@ const Admin: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  // Cargar productos
   useEffect(() => {
     if (user?.role === 'admin') {
-      loadProducts();
+      loadAdminData();
     }
   }, [user]);
 
-  const loadProducts = async () => {
+  const loadAdminData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await adminService.getProducts({ limit: 100 });
-      setProducts(response.products || []);
-      
-      // Calcular estadísticas
-      const active = response.products?.filter((p: Product) => p.active) || [];
-      const lowStock = active.filter((p: Product) => p.stock < 10) || [];
-      
-      setStats({
-        totalProducts: response.products?.length || 0,
-        activeProducts: active.length,
-        lowStock: lowStock.length,
-      });
+      const [dashboardResponse, productsResponse, ordersResponse, usersResponse] = await Promise.all([
+        adminService.getDashboardStats(),
+        adminService.getProducts({ limit: 100 }),
+        adminService.getAllOrders({ limit: 50 }),
+        adminService.getUsers({ limit: 100 }),
+      ]);
+
+      setDashboard(dashboardResponse);
+      setProducts(productsResponse.products || []);
+      setOrders(ordersResponse.orders || []);
+      setUsers(usersResponse.users || []);
     } catch (err: any) {
-      setError(getApiErrorMessage(err, 'Error al cargar productos'));
-      console.error('Error:', err);
+      setError(getApiErrorMessage(err, 'Error al cargar panel admin'));
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadProducts = async () => {
+    const response = await adminService.getProducts({ limit: 100 });
+    setProducts(response.products || []);
+  };
+
+  const loadOrders = async () => {
+    const response = await adminService.getAllOrders({ limit: 50 });
+    setOrders(response.orders || []);
+  };
+
+  const loadUsers = async () => {
+    const response = await adminService.getUsers({ limit: 100 });
+    setUsers(response.users || []);
+  };
+
+  const formatPrice = (price?: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(price || 0);
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Sin fecha';
+    return new Date(dateString).toLocaleString('es-CO', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
+
+  const normalizeImageUrl = (imageUrl?: string | null) => {
+    if (!imageUrl) return '';
+    return imageUrl.startsWith('http') ? imageUrl : `${API_BASE_NO_API}${imageUrl}`;
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'> = {
+      pendiente: 'warning',
+      confirmada: 'info',
+      en_proceso: 'primary',
+      enviada: 'secondary',
+      entregada: 'success',
+      cancelada: 'error',
+    };
+    return colors[status] || 'default';
+  };
+
+  const getLowStockProducts = () => {
+    return products.filter((product) => product.active && product.stock <= 10);
+  };
+
+  const getActiveProducts = () => products.filter((product) => product.active);
+
+  const getPendingOrders = () => orders.filter((order) => ['pendiente', 'confirmada', 'en_proceso'].includes(order.status));
+
+  const parseConfiguration = (value?: CartItemConfiguration | string | null): CartItemConfiguration => {
+    if (!value) return {};
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return { notes: value };
+      }
+    }
+    return value;
+  };
+
+  const normalizeSelections = (value: unknown): CartSelection[] => {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((selection) => {
+        if (typeof selection === 'string') return { name: selection };
+        if (!selection || typeof selection !== 'object') return null;
+        const raw = selection as Record<string, any>;
+        return {
+          name: raw.name || raw.label || raw.flavor || raw.extra || 'Seleccion',
+          quantity: Number(raw.quantity || 1),
+          priceDelta: Number(raw.priceDelta || raw.additionalPrice || raw.extraPrice || 0),
+        };
+      })
+      .filter(Boolean) as CartSelection[];
+  };
+
+  const renderOrderItemConfig = (item: OrderItem) => {
+    const config = parseConfiguration(item.configuration);
+    const flavors = normalizeSelections(config.flavors || config.selectedFlavors);
+    const extras = normalizeSelections(config.extras || config.selectedExtras);
+
+    if (flavors.length === 0 && extras.length === 0 && !config.notes) {
+      return <Typography variant="body2" color="text.secondary">Sin configuracion adicional</Typography>;
+    }
+
+    return (
+      <Stack spacing={1} sx={{ mt: 1 }}>
+        {flavors.length > 0 && (
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 800 }}>Sabores</Typography>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 0.5 }}>
+              {flavors.map((flavor, index) => (
+                <Chip
+                  key={`${flavor.name}-${index}`}
+                  label={`${flavor.quantity && flavor.quantity > 1 ? `${flavor.quantity}x ` : ''}${flavor.name}${flavor.priceDelta ? ` +${formatPrice(flavor.priceDelta)}` : ''}`}
+                  size="small"
+                />
+              ))}
+            </Stack>
+          </Box>
+        )}
+        {extras.length > 0 && (
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 800 }}>Extras</Typography>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 0.5 }}>
+              {extras.map((extra, index) => (
+                <Chip
+                  key={`${extra.name}-${index}`}
+                  label={`${extra.quantity && extra.quantity > 1 ? `${extra.quantity}x ` : ''}${extra.name}${extra.priceDelta ? ` +${formatPrice(extra.priceDelta)}` : ''}`}
+                  size="small"
+                  color="secondary"
+                  variant="outlined"
+                />
+              ))}
+            </Stack>
+          </Box>
+        )}
+        {config.notes && <Alert severity="info">{config.notes}</Alert>}
+      </Stack>
+    );
   };
 
   const handleOpenDialog = (product?: Product) => {
@@ -137,10 +270,7 @@ const Admin: React.FC = () => {
         category: product.category || '',
         active: product.active,
       });
-  // Si la imagen viene como ruta relativa (empieza con /uploads) o no contiene http, prefix con backend
-  const rawUrl = product.imageUrl || '';
-  const normalized = rawUrl && !rawUrl.startsWith('http') ? `${API_BASE_NO_API}${rawUrl}` : rawUrl || null;
-  setImagePreview(normalized);
+      setImagePreview(normalizeImageUrl(product.imageUrl) || null);
     } else {
       setEditingProduct(null);
       setFormData({
@@ -176,41 +306,55 @@ const Admin: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Validar tipo de archivo
-      if (!file.type.startsWith('image/')) {
-        setError('Por favor selecciona un archivo de imagen válido');
-        return;
-      }
+    if (!file) return;
 
-      // Validar tamaño (5MB máximo)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('El archivo es demasiado grande. Máximo 5MB');
-        return;
-      }
-
-      setSelectedFile(file);
-      setError(null);
-
-      // Crear preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file.type.startsWith('image/')) {
+      setError('Selecciona un archivo de imagen valido.');
+      return;
     }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen no debe superar 5MB.');
+      return;
+    }
+
+    setSelectedFile(file);
+    setError(null);
+
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async () => {
     try {
+      setSectionLoading(true);
       setError(null);
       setSuccess(null);
 
+      const price = parseFloat(formData.price);
+      const stock = parseInt(formData.stock, 10);
+
+      if (!formData.name.trim()) {
+        setError('El nombre del producto es obligatorio.');
+        return;
+      }
+
+      if (!price || price <= 0) {
+        setError('El precio debe ser mayor a 0.');
+        return;
+      }
+
+      if (Number.isNaN(stock) || stock < 0) {
+        setError('El stock debe ser mayor o igual a 0.');
+        return;
+      }
+
       const productData = {
-        name: formData.name,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        stock: parseInt(formData.stock) || 0,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price,
+        stock,
         imageUrl: formData.imageUrl || undefined,
         category: formData.category || undefined,
         active: formData.active,
@@ -219,87 +363,59 @@ const Admin: React.FC = () => {
       let productId: number;
 
       if (editingProduct) {
-        // Actualizar producto existente
         await adminService.updateProduct(editingProduct.id, productData);
         productId = editingProduct.id;
-        setSuccess('Producto actualizado exitosamente');
+        setSuccess('Producto actualizado.');
       } else {
-        // Crear nuevo producto
         const response = await adminService.createProduct(productData);
         productId = response.product.id;
-        setSuccess('Producto creado exitosamente');
+        setSuccess('Producto creado.');
       }
 
-      // Si hay un archivo seleccionado, subirlo
       if (selectedFile) {
-        try {
-          const uploadResponse = await adminService.uploadProductImage(productId, selectedFile);
-          console.log('✅ Imagen subida exitosamente:', uploadResponse);
-          
-          // Forzar recarga inmediata del producto actualizado
-          if (uploadResponse.product && uploadResponse.product.imageUrl) {
-            // Actualizar el producto en el estado local inmediatamente
-            setProducts(prevProducts => 
-              prevProducts.map(p => 
-                p.id === productId 
-                  ? { ...p, imageUrl: uploadResponse.product.imageUrl }
-                  : p
-              )
-            );
-          }
-          
-          setSuccess(
-            editingProduct
-              ? 'Producto e imagen actualizados exitosamente'
-              : 'Producto e imagen creados exitosamente'
-          );
-        } catch (uploadErr: any) {
-          console.error('❌ Error al subir imagen:', uploadErr);
-          setError(
-            getApiErrorMessage(uploadErr, 'Producto guardado pero hubo un error al subir la imagen')
-          );
-        }
+        await adminService.uploadProductImage(productId, selectedFile);
+        setSuccess(editingProduct ? 'Producto e imagen actualizados.' : 'Producto e imagen creados.');
       }
 
       handleCloseDialog();
-      // Recargar productos después de un pequeño delay
-      setTimeout(() => {
-        loadProducts();
-      }, 800);
+      await loadProducts();
     } catch (err: any) {
       setError(getApiErrorMessage(err, 'Error al guardar producto'));
-      console.error('Error:', err);
+    } finally {
+      setSectionLoading(false);
     }
   };
 
   const handleDelete = async (productId: number) => {
     try {
+      setSectionLoading(true);
       setError(null);
       setSuccess(null);
       const response = await adminService.deleteProduct(productId);
-      
-      // Verificar si la respuesta fue exitosa
-      if (response) {
-        setSuccess(response.message || 'Producto eliminado exitosamente');
-        setDeleteConfirm(null);
-        // Recargar productos después de un pequeño delay para asegurar que se actualice
-        setTimeout(() => {
-          loadProducts();
-        }, 100);
-      }
-    } catch (err: any) {
-      console.error('Error completo al eliminar:', err);
-      const errorMessage = getApiErrorMessage(err, 'Error al eliminar producto. Por favor, intenta de nuevo.');
-      setError(errorMessage);
+      setSuccess(response.message || 'Producto desactivado.');
       setDeleteConfirm(null);
+      await loadProducts();
+    } catch (err: any) {
+      setError(getApiErrorMessage(err, 'Error al desactivar producto'));
+    } finally {
+      setSectionLoading(false);
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-    }).format(price);
+  const handleOrderStatusChange = async (orderId: number, status: string) => {
+    try {
+      setSectionLoading(true);
+      setError(null);
+      setSuccess(null);
+      const response = await adminService.updateOrderStatusAdmin(orderId, status);
+      setSuccess('Estado de pedido actualizado.');
+      setOrders((prev) => prev.map((order) => order.id === orderId ? response.order : order));
+      setSelectedOrder((prev) => prev && prev.id === orderId ? response.order : prev);
+    } catch (err: any) {
+      setError(getApiErrorMessage(err, 'Error al actualizar estado del pedido'));
+    } finally {
+      setSectionLoading(false);
+    }
   };
 
   if (!isAuthenticated || user?.role !== 'admin') {
@@ -312,76 +428,41 @@ const Admin: React.FC = () => {
     );
   }
 
-  if (loading && products.length === 0) {
+  if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
         <CircularProgress size={60} />
         <Typography variant="h6" sx={{ mt: 2 }}>
-          Cargando panel de administración...
+          Cargando panel de administracion...
         </Typography>
       </Container>
     );
   }
 
+  const dashboardOverview = dashboard?.overview || {};
+  const lowStockProducts = getLowStockProducts();
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <AdminPanelSettings sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
-            Panel de Administración
-          </Typography>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <AdminPanelSettings sx={{ fontSize: 40, color: 'primary.main' }} />
+            <Box>
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 900 }}>
+                Panel Admin Kapola
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Gestiona productos, stock, imagenes, pedidos y clientes.
+              </Typography>
+            </Box>
+          </Box>
+          <Button startIcon={<Refresh />} variant="outlined" onClick={loadAdminData} disabled={sectionLoading}>
+            Actualizar
+          </Button>
         </Box>
-        <Typography variant="body1" color="text.secondary">
-          Gestiona productos, usuarios y órdenes de tu tienda
-        </Typography>
       </Box>
 
-      {/* Estadísticas */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ShoppingBag sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6">Total Productos</Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                {stats.totalProducts}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <CheckCircle sx={{ mr: 1, color: 'success.main' }} />
-                <Typography variant="h6">Productos Activos</Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                {stats.activeProducts}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Inventory sx={{ mr: 1, color: 'warning.main' }} />
-                <Typography variant="h6">Stock Bajo</Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                {stats.lowStock}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Alertas */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
@@ -393,330 +474,360 @@ const Admin: React.FC = () => {
         </Alert>
       )}
 
-      {/* Botón Agregar Producto */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-          Gestión de Productos
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-          sx={{
-            backgroundColor: '#ee9ca7',
-            '&:hover': { backgroundColor: '#d4a5ad' },
-          }}
-        >
-          Agregar Producto
-        </Button>
-      </Box>
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <ShoppingBag color="primary" />
+              <Typography variant="body2" color="text.secondary">Productos activos</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 900 }}>{dashboardOverview.totalProducts ?? getActiveProducts().length}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <ReceiptLong color="primary" />
+              <Typography variant="body2" color="text.secondary">Pedidos totales</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 900 }}>{dashboardOverview.totalOrders ?? orders.length}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Inventory color="warning" />
+              <Typography variant="body2" color="text.secondary">Stock bajo</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 900 }}>{lowStockProducts.length}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <CheckCircle color="success" />
+              <Typography variant="body2" color="text.secondary">Ventas entregadas</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 900 }}>{formatPrice(dashboardOverview.totalRevenue)}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {/* Tabla de Productos */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Imagen</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Categoría</TableCell>
-              <TableCell align="right">Precio</TableCell>
-              <TableCell align="right">Stock</TableCell>
-              <TableCell align="center">Estado</TableCell>
-              <TableCell align="center">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {products.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body1" color="text.secondary">
-                    No hay productos registrados
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              products.map((product) => (
-                <TableRow key={product.id} hover>
-                  <TableCell>
-                    <Box sx={{ position: 'relative', width: 60, height: 60 }}>
-                      {product.imageUrl ? (
+      {lowStockProducts.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Productos con bajo stock</Typography>
+          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+            {lowStockProducts.map((product) => (
+              <Chip key={product.id} label={`${product.name}: ${product.stock}`} size="small" color="warning" />
+            ))}
+          </Stack>
+        </Alert>
+      )}
+
+      <Paper sx={{ mb: 3 }}>
+        <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} variant="scrollable" scrollButtons="auto">
+          <Tab icon={<ShoppingBag />} iconPosition="start" label="Productos" />
+          <Tab icon={<ReceiptLong />} iconPosition="start" label={`Pedidos (${getPendingOrders().length})`} />
+          <Tab icon={<People />} iconPosition="start" label="Clientes" />
+        </Tabs>
+      </Paper>
+
+      {activeTab === 0 && (
+        <Box>
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Typography variant="h5" sx={{ fontWeight: 900 }}>Productos</Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => handleOpenDialog()}
+              sx={{ backgroundColor: '#ee9ca7', '&:hover': { backgroundColor: '#d98291' } }}
+            >
+              Crear producto
+            </Button>
+          </Box>
+
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Imagen</TableCell>
+                  <TableCell>Producto</TableCell>
+                  <TableCell>Categoria</TableCell>
+                  <TableCell align="right">Precio</TableCell>
+                  <TableCell align="right">Stock</TableCell>
+                  <TableCell align="center">Estado</TableCell>
+                  <TableCell align="center">Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id} hover>
+                    <TableCell>
+                      {normalizeImageUrl(product.imageUrl) ? (
                         <CardMedia
                           component="img"
-                          sx={{ 
-                            width: 60, 
-                            height: 60, 
-                            objectFit: 'cover', 
-                            borderRadius: 1,
-                            backgroundColor: '#f5f5f5',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            zIndex: 1
-                          }}
-                          // Normalizar URL si es relativa
-                          image={product.imageUrl.startsWith('http') ? product.imageUrl : `${API_BASE_NO_API}${product.imageUrl}`}
+                          image={normalizeImageUrl(product.imageUrl)}
                           alt={product.name}
-                          onError={(e: any) => {
-                            console.error('❌ Error al cargar imagen:', product.imageUrl);
-                            e.target.style.display = 'none';
-                            const placeholder = e.target.parentElement?.querySelector('.image-placeholder');
-                            if (placeholder) {
-                              (placeholder as HTMLElement).style.display = 'flex';
-                            }
-                          }}
+                          sx={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 1, bgcolor: '#f5f5f5' }}
                         />
-                      ) : null}
-                      <Box
-                        className="image-placeholder"
-                        sx={{
-                          width: 60,
-                          height: 60,
-                          bgcolor: 'grey.200',
-                          display: product.imageUrl ? 'none' : 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: 1,
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          zIndex: 0
+                      ) : (
+                        <Box sx={{ width: 60, height: 60, borderRadius: 1, bgcolor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <ShoppingBag color="disabled" />
+                        </Box>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body1" sx={{ fontWeight: 800 }}>{product.name}</Typography>
+                      {product.description && (
+                        <Typography variant="caption" color="text.secondary">{product.description.slice(0, 72)}{product.description.length > 72 ? '...' : ''}</Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>{product.category ? <Chip label={product.category} size="small" /> : 'Sin categoria'}</TableCell>
+                    <TableCell align="right">{formatPrice(product.price)}</TableCell>
+                    <TableCell align="right">
+                      <Chip label={product.stock} color={product.stock <= 10 ? 'warning' : 'default'} size="small" />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip label={product.active ? 'Activo' : 'Inactivo'} color={product.active ? 'success' : 'default'} size="small" />
+                    </TableCell>
+                    <TableCell align="center">
+                      <IconButton onClick={() => handleOpenDialog(product)} color="primary" size="small">
+                        <Edit />
+                      </IconButton>
+                      <IconButton onClick={() => setDeleteConfirm(product.id)} color="error" size="small" disabled={!product.active}>
+                        <Delete />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
+      {activeTab === 1 && (
+        <Box>
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Typography variant="h5" sx={{ fontWeight: 900 }}>Pedidos</Typography>
+            <Button variant="outlined" startIcon={<Refresh />} onClick={loadOrders}>Actualizar pedidos</Button>
+          </Box>
+
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Cliente</TableCell>
+                  <TableCell>Fecha</TableCell>
+                  <TableCell>Total</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell align="center">Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {orders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>No hay pedidos registrados</TableCell>
+                  </TableRow>
+                ) : orders.map((order) => (
+                  <TableRow key={order.id} hover>
+                    <TableCell>#{order.id}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>{order.user?.name || 'Cliente'}</Typography>
+                      <Typography variant="caption" color="text.secondary">{order.user?.email || 'Sin email'}</Typography>
+                    </TableCell>
+                    <TableCell>{formatDate(order.createdAt)}</TableCell>
+                    <TableCell>{formatPrice(order.total)}</TableCell>
+                    <TableCell>
+                      <FormControl size="small" fullWidth>
+                        <Select
+                          value={order.status}
+                          onChange={(e) => handleOrderStatusChange(order.id, e.target.value)}
+                          disabled={sectionLoading}
+                        >
+                          {ORDER_STATUSES.map((status) => (
+                            <MenuItem key={status} value={status}>{status}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        color="primary"
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setOrderDialogOpen(true);
                         }}
                       >
-                        <ShoppingBag color="disabled" />
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {product.name}
-                    </Typography>
-                    {product.description && (
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                        {product.description.substring(0, 50)}...
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {product.category ? (
-                      <Chip label={product.category} size="small" />
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        Sin categoría
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                      {formatPrice(product.price)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Chip
-                      label={product.stock}
-                      size="small"
-                      color={product.stock < 10 ? 'error' : product.stock < 20 ? 'warning' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={product.active ? 'Activo' : 'Inactivo'}
-                      size="small"
-                      color={product.active ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(product)}
-                      sx={{ color: 'primary.main' }}
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => setDeleteConfirm(product.id)}
-                      sx={{ color: 'error.main' }}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                        <Visibility />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
 
-      {/* Dialog para Agregar/Editar Producto */}
+      {activeTab === 2 && (
+        <Box>
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Typography variant="h5" sx={{ fontWeight: 900 }}>Clientes y usuarios</Typography>
+            <Button variant="outlined" startIcon={<Refresh />} onClick={loadUsers}>Actualizar usuarios</Button>
+          </Box>
+
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nombre</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Rol</TableCell>
+                  <TableCell>Pedidos</TableCell>
+                  <TableCell>Creado</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {users.map((appUser: any) => (
+                  <TableRow key={appUser.id} hover>
+                    <TableCell>{appUser.name}</TableCell>
+                    <TableCell>{appUser.email}</TableCell>
+                    <TableCell><Chip label={appUser.role} size="small" color={appUser.role === 'admin' ? 'warning' : 'default'} /></TableCell>
+                    <TableCell>{appUser._count?.orders ?? 0}</TableCell>
+                    <TableCell>{formatDate(appUser.createdAt)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {editingProduct ? 'Editar Producto' : 'Agregar Nuevo Producto'}
-        </DialogTitle>
+        <DialogTitle>{editingProduct ? 'Editar producto' : 'Crear producto'}</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-            <TextField
-              label="Nombre del Producto"
-              fullWidth
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <TextField
-              label="Descripción"
-              fullWidth
-              multiline
-              rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
+          <Stack spacing={2} sx={{ pt: 2 }}>
+            <TextField label="Nombre del producto" fullWidth required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            <TextField label="Descripcion" fullWidth multiline rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
             <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  label="Precio (COP)"
-                  type="number"
-                  fullWidth
-                  required
-                  inputProps={{ min: 0, step: 0.01 }}
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                />
+              <Grid item xs={12} sm={6}>
+                <TextField label="Precio (COP)" type="number" fullWidth required inputProps={{ min: 0 }} value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
               </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Stock"
-                  type="number"
-                  fullWidth
-                  inputProps={{ min: 0 }}
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                />
+              <Grid item xs={12} sm={6}>
+                <TextField label="Stock" type="number" fullWidth required inputProps={{ min: 0 }} value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} />
               </Grid>
             </Grid>
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Imagen del Producto
-              </Typography>
-              <Box sx={{ mb: 2 }}>
-                <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="image-upload"
-                  type="file"
-                  onChange={handleFileChange}
-                />
-                <label htmlFor="image-upload">
-                  <Button
-                    variant="outlined"
-                    component="span"
-                    fullWidth
-                    sx={{ mb: 1 }}
-                  >
-                    Seleccionar Imagen
-                  </Button>
-                </label>
-                {selectedFile && (
-                  <Typography variant="caption" color="text.secondary">
-                    {selectedFile.name}
-                  </Typography>
-                )}
-              </Box>
-
-              {/* Preview de imagen */}
-              {imagePreview && (
-                <Box
-                  sx={{
-                    mb: 2,
-                    display: 'flex',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={imagePreview}
-                    alt="Preview"
-                    sx={{
-                      maxWidth: '100%',
-                      maxHeight: 200,
-                      objectFit: 'contain',
-                      borderRadius: 1,
-                      border: '1px solid #e0e0e0',
-                    }}
-                  />
-                </Box>
-              )}
-
-              {/* Opción alternativa: URL */}
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                O ingresa una URL de imagen:
-              </Typography>
-              <TextField
-                label="URL de la Imagen"
-                fullWidth
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://ejemplo.com/imagen.jpg"
-                disabled={!!selectedFile}
-              />
-            </Box>
             <FormControl fullWidth>
-              <InputLabel>Categoría</InputLabel>
-              <Select
-                value={formData.category}
-                label="Categoría"
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              >
-                <MenuItem value="">Sin categoría</MenuItem>
-                <MenuItem value="Chocolate">Chocolate</MenuItem>
-                <MenuItem value="Vainilla">Vainilla</MenuItem>
-                <MenuItem value="Azúcar">Azúcar</MenuItem>
-                <MenuItem value="Especiales">Especiales</MenuItem>
-                <MenuItem value="Sin Gluten">Sin Gluten</MenuItem>
+              <InputLabel>Categoria</InputLabel>
+              <Select value={formData.category} label="Categoria" onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+                <MenuItem value="">Sin categoria</MenuItem>
+                {CATEGORIES.map((category) => <MenuItem key={category} value={category}>{category}</MenuItem>)}
               </Select>
             </FormControl>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.active}
-                  onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                />
-              }
-              label="Producto Activo"
-            />
-          </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>Imagen del producto</Typography>
+              <input accept="image/*" style={{ display: 'none' }} id="admin-image-upload" type="file" onChange={handleFileChange} />
+              <label htmlFor="admin-image-upload">
+                <Button variant="outlined" component="span">Subir imagen</Button>
+              </label>
+              {selectedFile && <Typography variant="caption" sx={{ ml: 2 }}>{selectedFile.name}</Typography>}
+              {imagePreview && (
+                <Box component="img" src={imagePreview} alt="Preview" sx={{ display: 'block', maxWidth: 240, maxHeight: 180, objectFit: 'contain', mt: 2, borderRadius: 1 }} />
+              )}
+              <TextField
+                label="URL de imagen"
+                fullWidth
+                sx={{ mt: 2 }}
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                disabled={Boolean(selectedFile)}
+              />
+            </Box>
+            <FormControlLabel control={<Switch checked={formData.active} onChange={(e) => setFormData({ ...formData, active: e.target.checked })} />} label="Producto activo" />
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={!formData.name || !formData.price}
-            sx={{
-              backgroundColor: '#ee9ca7',
-              '&:hover': { backgroundColor: '#d4a5ad' },
-            }}
-          >
-            {editingProduct ? 'Actualizar' : 'Crear'}
+          <Button variant="contained" onClick={handleSubmit} disabled={sectionLoading || !formData.name || !formData.price}>
+            {editingProduct ? 'Guardar cambios' : 'Crear producto'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Dialog de Confirmación de Eliminación */}
       <Dialog open={deleteConfirm !== null} onClose={() => setDeleteConfirm(null)}>
-        <DialogTitle>Confirmar Eliminación</DialogTitle>
+        <DialogTitle>Desactivar producto</DialogTitle>
         <DialogContent>
-          <Typography>
-            ¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.
-          </Typography>
+          <Typography>El producto dejara de mostrarse en el catalogo publico. Puedes reactivarlo editandolo.</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirm(null)}>Cancelar</Button>
-          <Button
-            onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
-            variant="contained"
-            color="error"
-          >
-            Eliminar
+          <Button onClick={() => deleteConfirm && handleDelete(deleteConfirm)} variant="contained" color="error" disabled={sectionLoading}>
+            Desactivar
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={orderDialogOpen} onClose={() => setOrderDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Detalle del pedido #{selectedOrder?.id}</DialogTitle>
+        <DialogContent>
+          {selectedOrder && (
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2">Cliente</Typography>
+                  <Typography>{selectedOrder.user?.name || 'Cliente'}</Typography>
+                  <Typography variant="body2" color="text.secondary">{selectedOrder.user?.email || 'Sin email'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2">Estado</Typography>
+                  <Chip label={selectedOrder.status} color={getStatusColor(selectedOrder.status)} />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2">Fecha</Typography>
+                  <Typography>{formatDate(selectedOrder.createdAt)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2">Total</Typography>
+                  <Typography sx={{ fontWeight: 900 }}>{formatPrice(selectedOrder.total)}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2">Datos de entrega</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Metodo de pago: {selectedOrder.paymentMethod || 'No especificado'}. Entrega/recogida y direccion se mostraran aqui cuando el checkout los envie.
+                  </Typography>
+                </Grid>
+              </Grid>
+              <Divider />
+              <Typography variant="h6" sx={{ fontWeight: 900 }}>Productos del pedido</Typography>
+              {selectedOrder.items.map((item) => (
+                <Paper key={item.id} variant="outlined" sx={{ p: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={8}>
+                      <Typography sx={{ fontWeight: 800 }}>{item.product?.name || item.productSnapshot?.name || 'Producto'}</Typography>
+                      <Typography variant="body2" color="text.secondary">Cantidad: {item.quantity}</Typography>
+                      {renderOrderItemConfig(item)}
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: { sm: 'right' } }}>Subtotal</Typography>
+                      <Typography sx={{ fontWeight: 900, textAlign: { sm: 'right' } }}>{formatPrice(item.subtotal)}</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {selectedOrder && (
+            <FormControl size="small" sx={{ minWidth: 180, mr: 'auto' }}>
+              <Select value={selectedOrder.status} onChange={(e) => handleOrderStatusChange(selectedOrder.id, e.target.value)}>
+                {ORDER_STATUSES.map((status) => <MenuItem key={status} value={status}>{status}</MenuItem>)}
+              </Select>
+            </FormControl>
+          )}
+          <Button onClick={() => setOrderDialogOpen(false)}>Cerrar</Button>
         </DialogActions>
       </Dialog>
     </Container>
@@ -724,4 +835,3 @@ const Admin: React.FC = () => {
 };
 
 export default Admin;
-
