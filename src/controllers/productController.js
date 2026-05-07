@@ -3,16 +3,12 @@ import { prisma } from "../config/prisma.js";
 // Obtener todos los productos
 export const getAllProducts = async (req, res) => {
   try {
-    const { category, active, page = 1, limit = 10 } = req.query;
+    const { category, page = 1, limit = 10 } = req.query;
     
-    const where = {};
+    const where = { active: true };
     
     if (category) {
       where.category = category;
-    }
-    
-    if (active !== undefined) {
-      where.active = active === 'true';
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -47,8 +43,11 @@ export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const product = await prisma.product.findUnique({
-      where: { id: parseInt(id) }
+    const product = await prisma.product.findFirst({
+      where: {
+        id: parseInt(id),
+        active: true
+      }
     });
 
     if (!product) {

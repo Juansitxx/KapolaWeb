@@ -44,7 +44,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { adminService } from '../services/api';
+import { adminService, getApiErrorMessage } from '../services/api';
 import { Product } from '../types';
 
 const Admin: React.FC = () => {
@@ -118,7 +118,7 @@ const Admin: React.FC = () => {
         lowStock: lowStock.length,
       });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al cargar productos');
+      setError(getApiErrorMessage(err, 'Error al cargar productos'));
       console.error('Error:', err);
     } finally {
       setLoading(false);
@@ -256,8 +256,7 @@ const Admin: React.FC = () => {
         } catch (uploadErr: any) {
           console.error('❌ Error al subir imagen:', uploadErr);
           setError(
-            uploadErr.response?.data?.message ||
-              'Producto guardado pero hubo un error al subir la imagen'
+            getApiErrorMessage(uploadErr, 'Producto guardado pero hubo un error al subir la imagen')
           );
         }
       }
@@ -268,7 +267,7 @@ const Admin: React.FC = () => {
         loadProducts();
       }, 800);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al guardar producto');
+      setError(getApiErrorMessage(err, 'Error al guardar producto'));
       console.error('Error:', err);
     }
   };
@@ -290,9 +289,7 @@ const Admin: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Error completo al eliminar:', err);
-      const errorMessage = err.response?.data?.message || 
-                           err.message || 
-                           'Error al eliminar producto. Por favor, intenta de nuevo.';
+      const errorMessage = getApiErrorMessage(err, 'Error al eliminar producto. Por favor, intenta de nuevo.');
       setError(errorMessage);
       setDeleteConfirm(null);
     }
@@ -306,7 +303,13 @@ const Admin: React.FC = () => {
   };
 
   if (!isAuthenticated || user?.role !== 'admin') {
-    return null;
+    return (
+      <Container maxWidth="sm" sx={{ py: 6 }}>
+        <Alert severity="warning">
+          No tienes permisos para acceder al panel de administracion.
+        </Alert>
+      </Container>
+    );
   }
 
   if (loading && products.length === 0) {

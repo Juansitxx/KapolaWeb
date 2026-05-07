@@ -29,7 +29,7 @@ export const registerUser = async (req, res) => {
 
     // Crear usuario
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: { name, email, password: hashedPassword, role: "cliente" },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
     });
 
@@ -67,7 +67,11 @@ export const loginUser = async (req, res) => {
       { expiresIn: "2h" }
     );
 
-    res.json({ message: "Login exitoso", token });
+    res.json({
+      message: "Login exitoso",
+      token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error en el inicio de sesión" });

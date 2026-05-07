@@ -22,6 +22,15 @@ const api = axios.create({
   },
 });
 
+export const getApiErrorMessage = (error: any, fallback = 'Ocurrio un error inesperado'): string => {
+  return (
+    error?.friendlyMessage ||
+    error?.response?.data?.message ||
+    error?.message ||
+    fallback
+  );
+};
+
 // Interceptor para agregar token a las requests
 api.interceptors.request.use(
   (config) => {
@@ -54,7 +63,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token expirado o inválido
       localStorage.removeItem('auth_token');
+      error.friendlyMessage = 'Tu sesion expiro o no has iniciado sesion. Ingresa de nuevo para continuar.';
       window.location.href = '/login';
+    } else if (error.response?.status === 403) {
+      error.friendlyMessage = 'No tienes permisos para realizar esta accion.';
     }
     return Promise.reject(error);
   }

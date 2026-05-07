@@ -143,6 +143,7 @@ export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
     const { role } = req.body;
+    const userId = parseInt(id);
 
     const validRoles = ['cliente', 'admin'];
     if (!validRoles.includes(role)) {
@@ -152,8 +153,32 @@ export const updateUserRole = async (req, res) => {
       });
     }
 
+    if (userId === req.user.id && role !== 'admin') {
+      return res.status(400).json({
+        message: "No puedes quitarte tu propio rol de administrador"
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true }
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (existingUser.role === 'admin' && role !== 'admin') {
+      const adminCount = await prisma.user.count({ where: { role: 'admin' } });
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          message: "Debe existir al menos un usuario administrador"
+        });
+      }
+    }
+
     const user = await prisma.user.update({
-      where: { id: parseInt(id) },
+      where: { id: userId },
       data: { role },
       select: {
         id: true,
@@ -239,6 +264,7 @@ export const updateOrderStatusAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+    const orderId = parseInt(id);
 
     const validStatuses = ['pendiente', 'confirmada', 'en_proceso', 'enviada', 'entregada', 'cancelada'];
     
@@ -249,8 +275,17 @@ export const updateOrderStatusAdmin = async (req, res) => {
       });
     }
 
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true }
+    });
+
+    if (!existingOrder) {
+      return res.status(404).json({ message: "Orden no encontrada" });
+    }
+
     const order = await prisma.order.update({
-      where: { id: parseInt(id) },
+      where: { id: orderId },
       data: { status },
       include: {
         user: {
@@ -278,48 +313,9 @@ export const updateOrderStatusAdmin = async (req, res) => {
 
 // Eliminar usuario (soft delete)
 export const deleteUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Verificar que no sea el mismo usuario
-    if (parseInt(id) === req.user.id) {
-      return res.status(400).json({ 
-        message: "No puedes eliminar tu propia cuenta" 
-      });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
-      include: { orders: true }
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
-
-    // Si tiene órdenes, cancelarlas
-    if (user.orders.length > 0) {
-      await prisma.order.updateMany({
-        where: { 
-          userId: parseInt(id),
-          status: { in: ['pendiente', 'confirmada', 'en_proceso'] }
-        },
-        data: { status: 'cancelada' }
-      });
-    }
-
-    // Eliminar usuario
-    await prisma.user.delete({
-      where: { id: parseInt(id) }
-    });
-
-    res.json({
-      message: "Usuario eliminado exitosamente"
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error al eliminar usuario" });
-  }
+  return res.status(405).json({
+    message: "La eliminacion de usuarios esta deshabilitada para proteger pedidos e historial"
+  });
 };
 
 // ============ GESTIÓN DE PRODUCTOS (ADMIN) ============
@@ -482,50 +478,22 @@ export const deleteProductAdmin = async (req, res) => {
       return res.status(400).json({ message: "ID de producto inválido" });
     }
 
-    // Verificar que el producto existe
     const existingProduct = await prisma.product.findUnique({
-      where: { id: productId },
-      include: {
-        cartItems: true,
-        items: true // OrderItems
-      }
+      where: { id: productId }
     });
 
     if (!existingProduct) {
       return res.status(404).json({ message: "Producto no encontrado" });
     }
 
-    // Verificar si tiene órdenes asociadas (OrderItems)
-    if (existingProduct.items && existingProduct.items.length > 0) {
-      // Si tiene órdenes, solo hacer soft delete
-      const product = await prisma.product.update({
-        where: { id: productId },
-        data: { active: false }
-      });
-
-      return res.json({
-        message: "Producto desactivado (tiene órdenes asociadas)",
-        product
-      });
-    }
-
-    // Usar transacción para asegurar que todo se elimine correctamente
-    await prisma.$transaction(async (tx) => {
-      // Eliminar items de carrito primero
-      if (existingProduct.cartItems && existingProduct.cartItems.length > 0) {
-        await tx.cartItem.deleteMany({
-          where: { productId: productId }
-        });
-      }
-
-      // Eliminar producto
-      await tx.product.delete({
-        where: { id: productId }
-      });
+    const product = await prisma.product.update({
+      where: { id: productId },
+      data: { active: false }
     });
 
     res.json({
-      message: "Producto eliminado exitosamente"
+      message: "Producto desactivado exitosamente",
+      product
     });
   } catch (error) {
     console.error('Error al eliminar producto:', error);

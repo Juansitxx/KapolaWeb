@@ -4,6 +4,12 @@ export const requireRole = (...allowedRoles) => {
       return res.status(401).json({ message: "Acceso no autorizado" });
     }
 
+    if (!req.user.role) {
+      return res.status(403).json({
+        message: "Acceso denegado. El usuario no tiene un rol asignado.",
+      });
+    }
+
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         message: "Acceso denegado. No tienes permisos para realizar esta accion.",

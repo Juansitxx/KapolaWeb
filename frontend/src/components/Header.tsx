@@ -39,6 +39,7 @@ const Header: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isCliente = user?.role === 'cliente';
+  const isAdmin = user?.role === 'admin';
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -64,9 +65,9 @@ const Header: React.FC = () => {
     { label: 'Productos', path: '/products', icon: <ShoppingBag /> },
   ];
 
-  if (user?.role === 'admin') {
+  if (isAdmin) {
     menuItems.push({
-      label: 'Administración',
+      label: 'Panel Admin',
       path: '/admin',
       icon: <AdminPanelSettings />,
     });
@@ -235,6 +236,14 @@ const Header: React.FC = () => {
               <ShoppingBag fontSize="small" />
             </ListItemIcon>
             <ListItemText>Mis Pedidos</ListItemText>
+          </MenuItem>
+        )}
+        {isAdmin && (
+          <MenuItem onClick={() => { navigate('/admin'); handleProfileMenuClose(); }}>
+            <ListItemIcon>
+              <AdminPanelSettings fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Panel Admin</ListItemText>
           </MenuItem>
         )}
         <Divider />

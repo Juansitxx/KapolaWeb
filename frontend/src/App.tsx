@@ -1,8 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
-import { AuthProvider } from './contexts/AuthContext';
+import { CssBaseline, Box, Alert, Button, CircularProgress, Container, Typography } from '@mui/material';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -80,6 +80,64 @@ const theme = createTheme({
   },
 });
 
+const RouteLoading: React.FC = () => (
+  <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+    <CircularProgress />
+    <Typography variant="body1" sx={{ mt: 2 }}>
+      Validando sesion...
+    </Typography>
+  </Container>
+);
+
+const AccessDenied: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <Container maxWidth="sm" sx={{ py: 8 }}>
+      <Alert severity="warning" sx={{ mb: 3 }}>
+        No tienes permisos para acceder a esta seccion.
+      </Alert>
+      <Button variant="contained" onClick={() => navigate('/')}>
+        Volver al catalogo
+      </Button>
+    </Container>
+  );
+};
+
+const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { loading, isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <RouteLoading />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+};
+
+const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+  const { loading, isAuthenticated, user } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <RouteLoading />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (user?.role !== 'admin') {
+    return <AccessDenied />;
+  }
+
+  return children;
+};
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -96,10 +154,10 @@ function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/products" element={<Home />} />
                   <Route path="/search" element={<Home />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/orders" element={<Orders />} />
-                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                  <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
+                  <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
+                  <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Box>
