@@ -19,6 +19,7 @@ import {
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface ProductCardProps {
   product: Product;
@@ -34,6 +35,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const { addToCart, loading } = useCart();
   const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   const [imageFailed, setImageFailed] = React.useState(false);
   const canUseCart = isAuthenticated && user?.role === 'cliente';
 
@@ -45,12 +47,21 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      alert('Debes iniciar sesion para agregar productos al carrito');
+      navigate('/login', {
+        state: {
+          from: '/ordenar',
+          message: 'Inicia sesion para agregar productos al carrito.',
+        },
+      });
       return;
     }
 
     if (!canUseCart) {
-      alert('Solo los clientes pueden agregar productos al carrito');
+      navigate('/', {
+        state: {
+          message: 'Solo las cuentas de cliente pueden agregar productos al carrito.',
+        },
+      });
       return;
     }
 
@@ -58,7 +69,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
       await addToCart(product.id, 1);
     } catch (error) {
       console.error('Error al agregar al carrito:', error);
-      alert('Error al agregar el producto al carrito');
     }
   };
 

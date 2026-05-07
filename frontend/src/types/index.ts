@@ -76,6 +76,11 @@ export interface Order {
   total: number;
   status: 'pendiente' | 'confirmada' | 'en_proceso' | 'enviada' | 'entregada' | 'cancelada';
   paymentMethod?: string;
+  deliveryMethod?: string;
+  customerName?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
   items: OrderItem[];
   user?: User;
 }

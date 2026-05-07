@@ -13,10 +13,6 @@ import {
   Alert,
   CircularProgress,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Stack,
 } from '@mui/material';
 import {
@@ -40,7 +36,6 @@ const Cart: React.FC = () => {
   const { cart, loading, updateCartItem, removeFromCart, clearCart, getTotal } = useCart();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-  const [showCheckoutDialog, setShowCheckoutDialog] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   useEffect(() => {
@@ -180,10 +175,6 @@ const Cart: React.FC = () => {
   };
 
   const handleCheckout = () => {
-    setShowCheckoutDialog(true);
-  };
-
-  const handleConfirmCheckout = () => {
     navigate('/checkout');
   };
 
@@ -549,37 +540,6 @@ const Cart: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Dialog
-        open={showCheckoutDialog}
-        onClose={() => setShowCheckoutDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Confirmar pedido</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Revisa que los productos, sabores, extras y cantidades sean correctos antes de continuar.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Total: {formatPrice(getTotal())}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowCheckoutDialog(false)}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleConfirmCheckout}
-            variant="contained"
-            sx={{
-              backgroundColor: '#ee9ca7',
-              '&:hover': { backgroundColor: '#d4a5ad' },
-            }}
-          >
-            Confirmar pedido
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };

@@ -94,7 +94,15 @@ export const getOrderById = async (req, res) => {
 // Crear nueva orden
 export const createOrder = async (req, res) => {
   try {
-    const { items, paymentMethod } = req.body;
+    const {
+      items,
+      paymentMethod,
+      deliveryMethod,
+      customerName,
+      phone,
+      address,
+      notes
+    } = req.body;
     const userId = req.user.id;
 
     // Validaciones
@@ -102,6 +110,47 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ 
         message: "La orden debe contener al menos un producto" 
       });
+    }
+
+    const validPaymentMethods = ['contra_entrega', 'transferencia', 'nequi_daviplata'];
+    const validDeliveryMethods = ['domicilio', 'recoger'];
+    const normalizedPaymentMethod = typeof paymentMethod === 'string' ? paymentMethod.trim() : '';
+    const normalizedDeliveryMethod = typeof deliveryMethod === 'string' ? deliveryMethod.trim() : '';
+    const normalizedPhone = typeof phone === 'string' ? phone.trim() : '';
+    const normalizedAddress = typeof address === 'string' ? address.trim() : '';
+    const normalizedNotes = typeof notes === 'string' ? notes.trim() : null;
+    const normalizedCustomerName = typeof customerName === 'string' && customerName.trim()
+      ? customerName.trim()
+      : req.user?.name || null;
+
+    if (!normalizedPaymentMethod) {
+      return res.status(400).json({ message: "El método de pago es obligatorio" });
+    }
+
+    if (!validPaymentMethods.includes(normalizedPaymentMethod)) {
+      return res.status(400).json({
+        message: "Método de pago inválido",
+        validPaymentMethods
+      });
+    }
+
+    if (!normalizedDeliveryMethod) {
+      return res.status(400).json({ message: "El método de entrega es obligatorio" });
+    }
+
+    if (!validDeliveryMethods.includes(normalizedDeliveryMethod)) {
+      return res.status(400).json({
+        message: "Método de entrega inválido",
+        validDeliveryMethods
+      });
+    }
+
+    if (!normalizedPhone) {
+      return res.status(400).json({ message: "El teléfono es obligatorio" });
+    }
+
+    if (normalizedDeliveryMethod === 'domicilio' && !normalizedAddress) {
+      return res.status(400).json({ message: "La dirección es obligatoria para pedidos a domicilio" });
     }
 
     // Verificar que todos los productos existen y tienen stock
@@ -149,7 +198,12 @@ export const createOrder = async (req, res) => {
         data: {
           userId,
           total,
-          paymentMethod,
+          paymentMethod: normalizedPaymentMethod,
+          deliveryMethod: normalizedDeliveryMethod,
+          customerName: normalizedCustomerName,
+          phone: normalizedPhone,
+          address: normalizedDeliveryMethod === 'domicilio' ? normalizedAddress : null,
+          notes: normalizedNotes,
           status: 'pendiente'
         }
       });

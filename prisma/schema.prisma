@@ -46,6 +46,11 @@ model Order {
   total        Float?
   status       String      @default("pendiente")
   paymentMethod String?
+  deliveryMethod String?
+  customerName String?
+  phone        String?
+  address      String?
+  notes        String?
   items        OrderItem[]
 }
 

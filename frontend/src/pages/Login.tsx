@@ -19,8 +19,13 @@ import {
   Lock,
   Login as LoginIcon,
 } from '@mui/icons-material';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+
+interface LoginLocationState {
+  from?: string;
+  message?: string;
+}
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -32,7 +37,9 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+  const locationState = location.state as LoginLocationState | null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -56,7 +63,7 @@ const Login: React.FC = () => {
       setLoading(true);
       setError(null);
       await login(formData.email, formData.password);
-      navigate('/');
+      navigate(locationState?.from || '/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al iniciar sesión');
     } finally {
@@ -100,6 +107,12 @@ const Login: React.FC = () => {
         {error && (
           <Alert severity="error" sx={{ width: '100%', mb: 3 }}>
             {error}
+          </Alert>
+        )}
+
+        {locationState?.message && (
+          <Alert severity="info" sx={{ width: '100%', mb: 3 }}>
+            {locationState.message}
           </Alert>
         )}
 

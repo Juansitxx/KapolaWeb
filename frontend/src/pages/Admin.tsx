@@ -57,6 +57,15 @@ const API_BASE_NO_API = (process.env.REACT_APP_API_URL || 'http://localhost:4000
 
 const ORDER_STATUSES = ['pendiente', 'confirmada', 'en_proceso', 'enviada', 'entregada', 'cancelada'];
 const CATEGORIES = ['New York', 'Chocolate', 'Red Velvet', 'Clasicas', 'Especiales', 'Cajas'];
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  contra_entrega: 'Contra entrega',
+  transferencia: 'Transferencia',
+  nequi_daviplata: 'Nequi / Daviplata',
+};
+const DELIVERY_METHOD_LABELS: Record<string, string> = {
+  domicilio: 'Domicilio',
+  recoger: 'Recoger',
+};
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -619,6 +628,7 @@ const Admin: React.FC = () => {
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Cliente</TableCell>
+                  <TableCell>Entrega</TableCell>
                   <TableCell>Fecha</TableCell>
                   <TableCell>Total</TableCell>
                   <TableCell>Estado</TableCell>
@@ -628,14 +638,18 @@ const Admin: React.FC = () => {
               <TableBody>
                 {orders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ py: 4 }}>No hay pedidos registrados</TableCell>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>No hay pedidos registrados</TableCell>
                   </TableRow>
                 ) : orders.map((order) => (
                   <TableRow key={order.id} hover>
                     <TableCell>#{order.id}</TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 800 }}>{order.user?.name || 'Cliente'}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 800 }}>{order.customerName || order.user?.name || 'Cliente'}</Typography>
                       <Typography variant="caption" color="text.secondary">{order.user?.email || 'Sin email'}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{order.deliveryMethod ? DELIVERY_METHOD_LABELS[order.deliveryMethod] || order.deliveryMethod : 'Sin entrega'}</Typography>
+                      <Typography variant="caption" color="text.secondary">{order.phone || 'Sin telefono'}</Typography>
                     </TableCell>
                     <TableCell>{formatDate(order.createdAt)}</TableCell>
                     <TableCell>{formatPrice(order.total)}</TableCell>
@@ -777,7 +791,7 @@ const Admin: React.FC = () => {
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2">Cliente</Typography>
-                  <Typography>{selectedOrder.user?.name || 'Cliente'}</Typography>
+                  <Typography>{selectedOrder.customerName || selectedOrder.user?.name || 'Cliente'}</Typography>
                   <Typography variant="body2" color="text.secondary">{selectedOrder.user?.email || 'Sin email'}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -794,9 +808,27 @@ const Admin: React.FC = () => {
                 </Grid>
                 <Grid item xs={12}>
                   <Typography variant="subtitle2">Datos de entrega</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Metodo de pago: {selectedOrder.paymentMethod || 'No especificado'}. Entrega/recogida y direccion se mostraran aqui cuando el checkout los envie.
-                  </Typography>
+                  <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Metodo de pago: {selectedOrder.paymentMethod ? PAYMENT_METHOD_LABELS[selectedOrder.paymentMethod] || selectedOrder.paymentMethod : 'No especificado'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Entrega: {selectedOrder.deliveryMethod ? DELIVERY_METHOD_LABELS[selectedOrder.deliveryMethod] || selectedOrder.deliveryMethod : 'No especificada'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Telefono: {selectedOrder.phone || 'No especificado'}
+                    </Typography>
+                    {selectedOrder.address && (
+                      <Typography variant="body2" color="text.secondary">
+                        Direccion: {selectedOrder.address}
+                      </Typography>
+                    )}
+                    {selectedOrder.notes && (
+                      <Typography variant="body2" color="text.secondary">
+                        Notas: {selectedOrder.notes}
+                      </Typography>
+                    )}
+                  </Stack>
                 </Grid>
               </Grid>
               <Divider />

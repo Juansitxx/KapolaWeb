@@ -10,6 +10,16 @@ import {
   SearchFilters 
 } from '../types';
 
+export interface CreateOrderInput {
+  items: Array<{ productId: number; quantity: number }>;
+  paymentMethod: string;
+  deliveryMethod: string;
+  customerName?: string;
+  phone: string;
+  address?: string;
+  notes?: string;
+}
+
 // Configuración base de la API
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
@@ -199,8 +209,14 @@ export const orderService = {
   },
 
   // Crear orden
-  createOrder: async (items: Array<{ productId: number; quantity: number }>, paymentMethod: string): Promise<{ message: string; order: Order }> => {
-    const response = await api.post('/orders', { items, paymentMethod });
+  createOrder: async (
+    orderData: CreateOrderInput | Array<{ productId: number; quantity: number }>,
+    paymentMethod?: string
+  ): Promise<{ message: string; order: Order }> => {
+    const payload = Array.isArray(orderData)
+      ? { items: orderData, paymentMethod }
+      : orderData;
+    const response = await api.post('/orders', payload);
     return response.data;
   },
 
