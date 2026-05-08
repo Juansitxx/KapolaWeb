@@ -66,7 +66,7 @@ const Orders: React.FC = () => {
       const response = await orderService.getOrders();
       setOrders(response.orders);
     } catch (err: any) {
-      setError(err.message || 'Error al cargar las órdenes');
+      setError(err.message || 'Error al cargar los pedidos');
     } finally {
       setLoading(false);
     }
@@ -80,9 +80,9 @@ const Orders: React.FC = () => {
   const handleCancelOrder = async (orderId: number) => {
     try {
       await orderService.cancelOrder(orderId);
-      await loadOrders(); // Recargar la lista
+      await loadOrders();
     } catch (err: any) {
-      setError(err.message || 'Error al cancelar la orden');
+      setError(err.message || 'Error al cancelar el pedido');
     }
   };
 
@@ -128,12 +128,29 @@ const Orders: React.FC = () => {
     const statusMap: { [key: string]: string } = {
       pendiente: 'Pendiente',
       confirmada: 'Confirmada',
-      en_proceso: 'En Proceso',
+      en_proceso: 'En proceso',
       enviada: 'Enviada',
       entregada: 'Entregada',
       cancelada: 'Cancelada',
     };
     return statusMap[status] || status;
+  };
+
+  const getPaymentMethodText = (paymentMethod?: string) => {
+    const paymentMethodMap: { [key: string]: string } = {
+      contra_entrega: 'Contra entrega',
+      transferencia: 'Transferencia',
+      nequi_daviplata: 'Nequi / Daviplata',
+    };
+    return paymentMethod ? paymentMethodMap[paymentMethod] || paymentMethod : 'No especificado';
+  };
+
+  const getDeliveryMethodText = (deliveryMethod?: string) => {
+    const deliveryMethodMap: { [key: string]: string } = {
+      domicilio: 'Domicilio',
+      recoger: 'Recoger',
+    };
+    return deliveryMethod ? deliveryMethodMap[deliveryMethod] || deliveryMethod : 'No especificada';
   };
 
   const formatPrice = (price: number) => {
@@ -144,7 +161,7 @@ const Orders: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    return new Date(dateString).toLocaleDateString('es-CO', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -158,7 +175,7 @@ const Orders: React.FC = () => {
   };
 
   if (!isAuthenticated || user?.role === 'admin') {
-    return null; // Se redirige automáticamente
+    return null;
   }
 
   if (loading) {
@@ -166,7 +183,7 @@ const Orders: React.FC = () => {
       <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
         <CircularProgress size={60} />
         <Typography variant="h6" sx={{ mt: 2 }}>
-          Cargando órdenes...
+          Cargando pedidos...
         </Typography>
       </Container>
     );
@@ -197,10 +214,10 @@ const Orders: React.FC = () => {
         >
           <ShoppingBag sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-            No tienes órdenes aún
+            No tienes pedidos aun
           </Typography>
           <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-            ¡Haz tu primer pedido y comienza a disfrutar de nuestras galletas!
+            Haz tu primer pedido y comienza a disfrutar de nuestras galletas.
           </Typography>
           <Button
             variant="contained"
@@ -211,7 +228,7 @@ const Orders: React.FC = () => {
               '&:hover': { backgroundColor: '#d4a5ad' },
             }}
           >
-            Explorar Productos
+            Explorar productos
           </Button>
         </Paper>
       </Container>
@@ -223,7 +240,7 @@ const Orders: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
         <ShoppingBag sx={{ mr: 2, fontSize: 40, color: 'primary.main' }} />
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
-          Mis Pedidos
+          Mis pedidos
         </Typography>
         <Chip
           label={`${orders.length} pedido${orders.length !== 1 ? 's' : ''}`}
@@ -240,7 +257,8 @@ const Orders: React.FC = () => {
               <TableCell>Fecha</TableCell>
               <TableCell>Estado</TableCell>
               <TableCell>Total</TableCell>
-              <TableCell>Método de Pago</TableCell>
+              <TableCell>Entrega</TableCell>
+              <TableCell>Pago</TableCell>
               <TableCell>Acciones</TableCell>
             </TableRow>
           </TableHead>
@@ -272,7 +290,15 @@ const Orders: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {order.paymentMethod || 'No especificado'}
+                    {getDeliveryMethodText(order.deliveryMethod)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {order.phone || 'Sin telefono'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2">
+                    {getPaymentMethodText(order.paymentMethod)}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -287,7 +313,7 @@ const Orders: React.FC = () => {
                       </IconButton>
                     </Tooltip>
                     {canCancelOrder(order.status) && (
-                      <Tooltip title="Cancelar orden">
+                      <Tooltip title="Cancelar pedido">
                         <IconButton
                           size="small"
                           onClick={() => handleCancelOrder(order.id)}
@@ -305,7 +331,6 @@ const Orders: React.FC = () => {
         </Table>
       </TableContainer>
 
-      {/* Dialog para ver detalles de la orden */}
       <Dialog
         open={showOrderDialog}
         onClose={() => setShowOrderDialog(false)}
@@ -313,7 +338,7 @@ const Orders: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          Detalles del Pedido #{selectedOrder?.id}
+          Detalles del pedido #{selectedOrder?.id}
         </DialogTitle>
         <DialogContent>
           {selectedOrder && (
@@ -321,7 +346,7 @@ const Orders: React.FC = () => {
               <Grid container spacing={3} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Fecha del Pedido
+                    Fecha del pedido
                   </Typography>
                   <Typography variant="body1">
                     {formatDate(selectedOrder.createdAt)}
@@ -348,12 +373,48 @@ const Orders: React.FC = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Método de Pago
+                    Pago
                   </Typography>
                   <Typography variant="body1">
-                    {selectedOrder.paymentMethod || 'No especificado'}
+                    {getPaymentMethodText(selectedOrder.paymentMethod)}
                   </Typography>
                 </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Entrega
+                  </Typography>
+                  <Typography variant="body1">
+                    {getDeliveryMethodText(selectedOrder.deliveryMethod)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Telefono
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedOrder.phone || 'No especificado'}
+                  </Typography>
+                </Grid>
+                {selectedOrder.address && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Direccion
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedOrder.address}
+                    </Typography>
+                  </Grid>
+                )}
+                {selectedOrder.notes && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Notas
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedOrder.notes}
+                    </Typography>
+                  </Grid>
+                )}
               </Grid>
 
               <Typography variant="h6" sx={{ mb: 2 }}>
